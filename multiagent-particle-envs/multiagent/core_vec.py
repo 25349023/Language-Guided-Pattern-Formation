@@ -2,7 +2,8 @@ import numpy as np
 import numba
 from numba import jit
 from numba import int32, float32, boolean, float64
-from numba import jitclass, deferred_type
+from numba import deferred_type
+from numba.experimental import jitclass
 import copy
 
 @jitclass([('p_pos', float64[:]), ('p_vel', float64[:])])

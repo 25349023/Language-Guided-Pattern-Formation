@@ -199,19 +199,19 @@ class MultiAgentEnv(gym.Env):
 
     # render environment
     def render(self, mode='human'):
-        if mode == 'human':
-            alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-            message = ''
-            for agent in self.world.agents:
-                comm = []
-                for other in self.world.agents:
-                    if other is agent: continue
-                    if np.all(other.state.c == 0):
-                        word = '_'
-                    else:
-                        word = alphabet[np.argmax(other.state.c)]
-                    message += (other.name + ' to ' + agent.name + ': ' + word + '   ')
-            print(message)
+        # if mode == 'human':
+        #     alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        #     message = ''
+        #     for agent in self.world.agents:
+        #         comm = []
+        #         for other in self.world.agents:
+        #             if other is agent: continue
+        #             if np.all(other.state.c == 0):
+        #                 word = '_'
+        #             else:
+        #                 word = alphabet[np.argmax(other.state.c)]
+        #             message += (other.name + ' to ' + agent.name + ': ' + word + '   ')
+        #     print(message)
 
         for i in range(len(self.viewers)):
             # create viewers (if necessary)

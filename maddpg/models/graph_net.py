@@ -265,11 +265,11 @@ class GraphNet(nn.Module):
             x = torch.cat([x, agent_att], 1)
 
         feat = F.relu(self.gc1(x, self.adj))
-        feat += F.relu(self.nn_gc1(x))
-        feat /= (1. * self.n_agents)
+        feat = feat + F.relu(self.nn_gc1(x))
+        feat = feat / (1. * self.n_agents)
         out = F.relu(self.gc2(feat, self.adj))
-        out += F.relu(self.nn_gc2(feat))
-        out /= (1. * self.n_agents)
+        out = out + F.relu(self.nn_gc2(feat))
+        out = out / (1. * self.n_agents)
 
         # Pooling
         if self.pool_type == 'avg':

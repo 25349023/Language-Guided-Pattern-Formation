@@ -1,6 +1,5 @@
 venv/
 .idea/
 __pycache__/
-ckpt_plot/
 
 test_input.txt

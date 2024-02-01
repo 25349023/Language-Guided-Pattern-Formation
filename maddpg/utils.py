@@ -49,6 +49,7 @@ def grad_norm(model):
     total_norm = total_norm ** (1. / 2)
     return total_norm
 
+
 def make_env(scenario_name, arglist, benchmark=False):
     from multiagent.environment import MultiAgentEnv
     import multiagent.scenarios as scenarios
@@ -65,9 +66,6 @@ def make_env(scenario_name, arglist, benchmark=False):
         env = MultiAgentEnv(world, scenario.reset_world, scenario.reward, scenario.observation,
                             seed_callback=scenario.seed, cam_range=scenario.world_radius)
     return env
-
-
-
 
 
 def make_env_vec(scenario_name, arglist, benchmark=False):

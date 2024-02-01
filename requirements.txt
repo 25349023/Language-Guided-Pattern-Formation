@@ -11,7 +11,6 @@ importlib-metadata==6.7.0
 kiwisolver==1.4.5
 llvmlite==0.39.1
 matplotlib==3.5.3
--e git+https://github.com/IouJenLiu/PIC.git@87a62eaa0285977cb0fa5674f8724cafaddded95#egg=multiagent&subdirectory=multiagent-particle-envs
 numba==0.56.4
 numpy==1.21.6
 numpy-stl==3.1.1

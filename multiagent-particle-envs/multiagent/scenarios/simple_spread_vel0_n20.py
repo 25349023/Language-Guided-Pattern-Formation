@@ -151,7 +151,7 @@ class Scenario(BaseScenario):
         dist_idx = np.argsort(other_dist)
         other_pos = [other_pos[i] for i in dist_idx[:self.n_others]]
         #other_pos = sorted(other_pos, key=lambda k: [k[0], k[1]])
-        obs = np.concatenate([agent.state.p_vel] + [agent.state.p_pos] + entity_pos + other_pos)
+        obs = np.concatenate([np.zeros_like(agent.state.p_vel)] + [agent.state.p_pos] + entity_pos + other_pos)
         return obs
 
     def seed(self, seed=None):

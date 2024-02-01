@@ -1,8 +1,17 @@
+import ast
+import operator
+import pprint
+
 import numpy as np
 import random
+import re
 from multiagent.core_vec import World, Agent, Landmark
 from multiagent.scenario import BaseScenario
 from bridson import poisson_disc_samples
+
+
+lm_pattern = re.compile(r'''\[(\(('.*?'|".*?"),\s*\[\d*,\s*\d*,\s*\d*,\s*\d*\]\)(,\s*)?)+\]''')
+
 
 class Scenario(BaseScenario):
     def make_world(self, sort_obs=True, use_numba=False):
@@ -33,18 +42,48 @@ class Scenario(BaseScenario):
             landmark.movable = False
 
         # make initial conditions
-        self.reset_world(world)
+        self.reset_world(world, True)
 
         return world
 
-    def reset_world(self, world):
-        self.l_locations = poisson_disc_samples(width=self.world_radius * 2, height=self.world_radius * 2,
-                                                r=self.agent_size * 4.5)
-        while len(self.l_locations) < len(world.landmarks):
+    def get_landmarks(self):
+        def remap(v, offset, reverse=False):
+            new_range = self.world_radius - boundary
+            pos_at_origin = (v - offset) / scale * new_range * 2
+
+            if reverse:
+                return -pos_at_origin + self.world_radius
+            else:
+                return pos_at_origin + self.world_radius
+
+        prompt = ''
+        while not lm_pattern.match(prompt):
+            prompt = input('please input the landmark settings: ')
+
+        landmarks = ast.literal_eval(prompt)
+        landmarks = [(x + w / 2, y + h / 2) for obj, (x, y, w, h) in landmarks]
+        min_x, max_x = min(x for x, _ in landmarks), max(x for x, _ in landmarks)
+        min_y, max_y = min(y for _, y in landmarks), max(y for _, y in landmarks)
+        mid_x, mid_y = (min_x + max_x) / 2, (min_y + max_y) / 2
+
+        scale = max(max_y - min_y, max_x - min_x)
+        boundary = 0.4
+        landmarks = [(remap(x, mid_x), remap(y, mid_y, True)) for x, y in landmarks]
+
+        return landmarks
+
+    def reset_world(self, world, from_make=False):
+        if from_make:
             self.l_locations = poisson_disc_samples(width=self.world_radius * 2, height=self.world_radius * 2,
                                                     r=self.agent_size * 4.5)
-            print('regenerate l location')
+            while len(self.l_locations) < len(world.landmarks):
+                self.l_locations = poisson_disc_samples(width=self.world_radius * 2, height=self.world_radius * 2,
+                                                        r=self.agent_size * 4.5)
+                print('regenerate l location')
+        else:
+            self.l_locations = self.get_landmarks()
 
+        pprint.pprint(self.l_locations)
         # random properties for agents
         for i, agent in enumerate(world.agents):
             agent.color = np.array([0.35, 0.35, 0.85])
@@ -152,6 +191,7 @@ class Scenario(BaseScenario):
         other_pos = [other_pos[i] for i in dist_idx[:self.n_others]]
         #other_pos = sorted(other_pos, key=lambda k: [k[0], k[1]])
         obs = np.concatenate([agent.state.p_vel] + [agent.state.p_pos] + entity_pos + other_pos)
+
         return obs
 
     def seed(self, seed=None):

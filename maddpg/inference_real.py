@@ -1,4 +1,3 @@
-import asyncio
 import os
 import random
 import time
@@ -6,11 +5,11 @@ import time
 import numpy as np
 import torch
 
-from eval import eval_model_async
+from eval_seq import eval_model_seq
 from utils import get_args
 
 
-async def main():
+def main():
     args = get_args()
 
     if args.exp_name is None:
@@ -38,21 +37,14 @@ async def main():
     eval_agent.device = dev_str
     print(f'device: {eval_agent.device}')
 
-    test_q = asyncio.Queue()
-    done_training = asyncio.Event()
-    t = asyncio.create_task(eval_model_async(test_q, done_training, args, False))
-
     tr_log = {'num_adversary': 0,
               'best_good_eval_reward': 0,
               'best_adversary_eval_reward': 0,
               'exp_save_dir': exp_save_dir, 'total_numsteps': total_numsteps,
               'value_loss': 0, 'policy_loss': 0,
               'i_episode': 0, 'start_time': start_time}
-    test_q.put_nowait([eval_agent, tr_log])
-    done_training.set()
-
-    await t
+    eval_model_seq(args, eval_agent, tr_log, False)
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    main()

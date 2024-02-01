@@ -18,11 +18,12 @@ def temp_seed(seed):
         np.random.set_state(state)
 
 
-async def eval_model_seq(test_q, args, agent, tr_log, save=True):
+def eval_model_seq(args, agent, tr_log, save=True):
     plot = {'good_rewards': [], 'adversary_rewards': [], 'rewards': [], 'steps': [], 'q_loss': [], 'gcn_q_loss': [],
             'p_loss': [], 'final': [], 'abs': []}
     best_eval_reward = -100000000
     eval_env = make_env(args.scenario, args)
+    device = torch.device("cuda:0" if torch.cuda.is_available() and args.cuda else "cpu")
 
     print('=================== start eval ===================')
     eval_env.seed(args.seed + 10)
@@ -36,7 +37,7 @@ async def eval_model_seq(test_q, args, agent, tr_log, save=True):
             n_agents = eval_env.n
             agents_rew = [[] for _ in range(n_agents)]
             while True:
-                action_n = agent.select_action(torch.Tensor(obs_n), action_noise=True,
+                action_n = agent.select_action(torch.Tensor(obs_n).to(device), action_noise=True,
                                                param_noise=False).squeeze().cpu().numpy()
                 next_obs_n, reward_n, done_n, _ = eval_env.step(action_n)
                 episode_step += 1
@@ -66,15 +67,10 @@ async def eval_model_seq(test_q, args, agent, tr_log, save=True):
         plot['q_loss'].append(tr_log['value_loss'])
         plot['p_loss'].append(tr_log['policy_loss'])
         print("========================================================")
-        print(
-            "Episode: {}, total numsteps: {}, {} eval runs, total time: {} s".
-            format(tr_log['i_episode'], tr_log['total_numsteps'], args.num_eval_runs,
-                   time.time() - tr_log['start_time']))
-        print("GOOD reward: avg {} std {}, average reward: {}, best reward {}".format(np.mean(eval_rewards),
-                                                                                      np.std(eval_rewards),
-                                                                                      np.mean(plot['rewards'][
-                                                                                              -10:]),
-                                                                                      best_eval_reward))
+        print(f"Episode: {tr_log['i_episode']}, total numsteps: {tr_log['total_numsteps']}, "
+              f"{args.num_eval_runs} eval runs, total time: {time.time() - tr_log['start_time']} s")
+        print(f"GOOD reward: avg {np.mean(eval_rewards)} std {np.std(eval_rewards)}, "
+              f"average reward: {np.mean(plot['rewards'][-10:])}, best reward {best_eval_reward}")
         plot['final'].append(np.mean(plot['rewards'][-10:]))
         plot['abs'].append(best_eval_reward)
         dict2csv(plot, os.path.join(tr_log['exp_save_dir'], 'train_curve.csv'))

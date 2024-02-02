@@ -19,16 +19,16 @@
 
 ### Simulation
     cd maddpg
-    python inference.py --exp_name coop_navigation_n20 --scenario simple_spread_custom_n20  --critic_type gcn_max  --cuda --num_steps 100
+    python inference.py --exp_name coop_navigation_n20 --scenario simple_spread_custom_n20 --critic_type gcn_max --cuda --num_steps 100
 
 ### Real robots
     cd maddpg
-    python inference_real.py --exp_name <exp_name>  --critic_type gcn_max  --cuda --num_steps 100
+    python inference_real.py --exp_name <exp_name> --critic_type gcn_max --cuda --num_steps 100 --num_agents 20
 
 , where exp_name can be `coop_navigation_dire_n20`, `coop_navigation_dire_n20_thres0p1`, `coop_navigation_vel0_n20`, or
 `coop_navigation_novel_n20`.
 
-The differences between these setups are:
+The differences between these setups are: (see TODO 2-2 in eval_real.py)
 - `coop_navigation_dire_n20` use the `get_direction(curr_agent.velocity)` to compute the first two element of the observation
 - `coop_navigation_dire_n20_thres0p1` use the `get_direction(curr_agent.velocity, eps=0.1)` to compute the first two element of the observation
 - `coop_navigation_vel0_n20` use the `np.array([0.0, 0.0])` as the first two element of the observation

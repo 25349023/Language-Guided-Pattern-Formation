@@ -87,7 +87,7 @@ def eval_model_real(args, agent):
 
     # TODO 1: Build / Initialize real robot agents
     agents = ...
-    n_agents = 20
+    n_agents = args.num_agents  # default is 20 agents
     landmarks = get_landmarks(n_agents)
 
     print('=================== start eval ===================')

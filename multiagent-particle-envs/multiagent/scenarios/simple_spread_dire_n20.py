@@ -17,7 +17,7 @@ class Scenario(BaseScenario):
         world.collaborative = True
         self.agent_size = 0.15
         self.world_radius = 3.0
-        self.n_others = 5
+        self.n_others = 10
         # add agents
         world.agents = [Agent() for i in range(num_agents)]
         for i, agent in enumerate(world.agents):
@@ -160,7 +160,7 @@ class Scenario(BaseScenario):
 
     @staticmethod
     def quantize(v):
-        if abs(v) < 0.1:
+        if abs(v) < 1e-6:
             return 0.0
         return 1.0 if v > 0 else -1.0
 

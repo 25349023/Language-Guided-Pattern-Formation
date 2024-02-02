@@ -12,12 +12,12 @@ class Scenario(BaseScenario):
         self.sort_obs = sort_obs
         # set any world properties first
         world.dim_c = 2
-        num_agents = 20
-        num_landmarks = 20
+        num_agents = 10
+        num_landmarks = 10
         world.collaborative = True
         self.agent_size = 0.15
         self.world_radius = 3.0
-        self.n_others = 10
+        self.n_others = 5
         # add agents
         world.agents = [Agent() for i in range(num_agents)]
         for i, agent in enumerate(world.agents):

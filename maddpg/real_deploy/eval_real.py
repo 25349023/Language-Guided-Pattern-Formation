@@ -73,6 +73,8 @@ def single_agent_observation(agents, i, landmarks):
     # TODO 2-2: depends on different checkpoints, the [0-1] observation will differ
     obs = np.concatenate([get_direction(curr_agent.velocity, eps=0.1)] +
                          [curr_agent.position] + landmark_pos + other_pos)
+    # obs = np.concatenate([np.array([0.0, 0.0])] +
+    #                      [curr_agent.position] + landmark_pos + other_pos)
     return obs
 
 
@@ -87,7 +89,7 @@ def eval_model_real(args, agent):
 
     # TODO 1: Build / Initialize real robot agents
     agents = ...
-    n_agents = args.num_agents  # default is 20 agents
+    n_agents = args.num_agents  # default is 10 agents
     landmarks = get_landmarks(n_agents)
 
     print('=================== start eval ===================')

@@ -21,8 +21,8 @@ def get_landmarks(num):
         else:
             return pos_at_origin
 
-    # for testing, it is a circle
-    prompt = """[('a cherry', [246, 206, 20, 20]), ('a cherry', [266, 206, 20, 20]), ('a cherry', [286, 206, 20, 20]), ('a cherry', [306, 206, 20, 20]), ('a cherry', [326, 206, 20, 20]), ('a cherry', [226, 226, 20, 20]), ('a cherry', [346, 226, 20, 20]), ('a cherry', [206, 246, 20, 20]), ('a cherry', [366, 246, 20, 20]), ('a cherry', [206, 266, 20, 20]), ('a cherry', [366, 266, 20, 20]), ('a cherry', [206, 286, 20, 20]), ('a cherry', [366, 286, 20, 20]), ('a cherry', [226, 306, 20, 20]), ('a cherry', [346, 306, 20, 20]), ('a cherry', [246, 326, 20, 20]), ('a cherry', [266, 326, 20, 20]), ('a cherry', [286, 326, 20, 20]), ('a cherry', [306, 326, 20, 20]), ('a cherry', [326, 326, 20, 20])]"""
+    # for testing, it is a triangle consists of 10 objects
+    prompt = """[('a cherry', [251, 156, 20, 20]), ('a cherry', [231, 176, 20, 20]), ('a cherry', [271, 176, 20, 20]), ('a cherry', [211, 196, 20, 20]), ('a cherry', [251, 196, 20, 20]), ('a cherry', [291, 196, 20, 20]), ('a cherry', [191, 216, 20, 20]), ('a cherry', [231, 216, 20, 20]), ('a cherry', [271, 216, 20, 20]), ('a cherry', [311, 216, 20, 20])]"""
 
     # prompt = ''
     # while not lm_pattern.match(prompt):

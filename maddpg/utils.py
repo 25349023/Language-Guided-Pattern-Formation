@@ -161,5 +161,5 @@ def get_args():
     parser.add_argument('--cuda', default=False, action='store_true')
     parser.add_argument('--eval_freq', type=int, default=1000)
     parser.add_argument("--display", action="store_true", default=False)
-    parser.add_argument("--num_agents", type=int, default=20)
+    parser.add_argument("--num_agents", type=int, default=10)
     return parser.parse_args()

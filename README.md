@@ -23,7 +23,7 @@
 
 ### Real robots
     cd maddpg
-    python inference_real.py --exp_name <exp_name> --critic_type gcn_max --cuda --num_steps 100 --num_agents 20
+    python real_deploy/inference_real.py --exp_name <exp_name> --critic_type gcn_max --cuda --num_steps 100 --num_agents 20
 
 , where exp_name can be `coop_navigation_dire_n20`, `coop_navigation_dire_n20_thres0p1`, `coop_navigation_vel0_n20`, or
 `coop_navigation_novel_n20`.

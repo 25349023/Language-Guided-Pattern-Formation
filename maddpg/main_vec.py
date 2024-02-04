@@ -28,7 +28,7 @@ print("========================================")
 torch.set_num_threads(1)
 device = torch.device("cuda:0" if torch.cuda.is_available() and args.cuda else "cpu")
 
-env = make_env(args.scenario, None)
+env = make_env(args.scenario, args)
 n_agents = env.n
 env.seed(args.seed)
 random.seed(args.seed)

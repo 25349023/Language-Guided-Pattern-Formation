@@ -1,5 +1,6 @@
 import argparse
 import csv
+import inspect
 
 
 def adjust_learning_rate(optimizer, steps, max_steps, start_decrease_step, init_lr):
@@ -57,7 +58,11 @@ def make_env(scenario_name, arglist, benchmark=False):
     # load scenario from script
     scenario = scenarios.load(scenario_name + ".py").Scenario()
     # create world
-    world = scenario.make_world()
+    sig = inspect.signature(scenario.make_world)
+    if 'args' in sig.parameters:
+        world = scenario.make_world(args=arglist)
+    else:
+        world = scenario.make_world()
     # create multiagent environment
     if benchmark:
         env = MultiAgentEnv(world, scenario.reset_world, scenario.reward, scenario.observation, scenario.benchmark_data,

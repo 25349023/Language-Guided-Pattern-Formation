@@ -218,11 +218,13 @@ class GraphNet(nn.Module):
     """
 
     def __init__(self, sa_dim, n_agents, hidden_size, agent_id=0,
-                 pool_type='avg', use_agent_id=False):
+                 pool_type='avg', use_agent_id=False, activation='relu'):
         super(GraphNet, self).__init__()
         self.sa_dim = sa_dim
         self.n_agents = n_agents
         self.pool_type = pool_type
+        self.activation = activation
+
         if use_agent_id:
             agent_id_attr_dim = 2
             self.gc1 = GraphConvLayer(sa_dim + agent_id_attr_dim, hidden_size)
@@ -268,12 +270,20 @@ class GraphNet(nn.Module):
             agent_att = torch.cat([self.agent_att] * x.shape[0], 0)
             x = torch.cat([x, agent_att], 1)
 
-        feat = F.leaky_relu(self.gc1(x, self.adj), 0.2)
-        feat = feat + F.leaky_relu(self.nn_gc1(x), 0.2)
-        feat = feat / (1. * self.n_agents)
-        out = F.leaky_relu(self.gc2(feat, self.adj), 0.2)
-        out = out + F.leaky_relu(self.nn_gc2(feat), 0.2)
-        out = out / (1. * self.n_agents)
+        if self.activation == 'relu':
+            feat = F.relu(self.gc1(x, self.adj))
+            feat = feat + F.relu(self.nn_gc1(x))
+            feat = feat / (1. * self.n_agents)
+            out = F.relu(self.gc2(feat, self.adj))
+            out = out + F.relu(self.nn_gc2(feat))
+            out = out / (1. * self.n_agents)
+        elif self.activation == 'leaky_relu':
+            feat = F.leaky_relu(self.gc1(x, self.adj), 0.2)
+            feat = feat + F.leaky_relu(self.nn_gc1(x), 0.2)
+            feat = feat / (1. * self.n_agents)
+            out = F.leaky_relu(self.gc2(feat, self.adj), 0.2)
+            out = out + F.leaky_relu(self.nn_gc2(feat), 0.2)
+            out = out / (1. * self.n_agents)
 
         # Pooling
         if self.pool_type == 'avg':
@@ -292,11 +302,13 @@ class GraphAttnNet(nn.Module):
     """
 
     def __init__(self, sa_dim, n_agents, hidden_size, agent_id=0,
-                 pool_type='avg', use_agent_id=False):
+                 pool_type='avg', use_agent_id=False, activation='relu'):
         super(GraphAttnNet, self).__init__()
         self.sa_dim = sa_dim
         self.n_agents = n_agents
         self.pool_type = pool_type
+        self.activation = activation
+
         if use_agent_id:
             agent_id_attr_dim = 2
             self.gc1 = DenseGATConv(sa_dim + agent_id_attr_dim, hidden_size)
@@ -342,12 +354,20 @@ class GraphAttnNet(nn.Module):
             agent_att = torch.cat([self.agent_att] * x.shape[0], 0)
             x = torch.cat([x, agent_att], 1)
 
-        feat = F.leaky_relu(self.gc1(x, self.adj), 0.2)
-        feat = feat + F.leaky_relu(self.nn_gc1(x), 0.2)
-        feat = feat / (1. * self.n_agents)
-        out = F.leaky_relu(self.gc2(feat, self.adj), 0.2)
-        out = out + F.leaky_relu(self.nn_gc2(feat), 0.2)
-        out = out / (1. * self.n_agents)
+        if self.activation == 'relu':
+            feat = F.relu(self.gc1(x, self.adj))
+            feat = feat + F.relu(self.nn_gc1(x))
+            feat = feat / (1. * self.n_agents)
+            out = F.relu(self.gc2(feat, self.adj))
+            out = out + F.relu(self.nn_gc2(feat))
+            out = out / (1. * self.n_agents)
+        elif self.activation == 'leaky_relu':
+            feat = F.leaky_relu(self.gc1(x, self.adj), 0.2)
+            feat = feat + F.leaky_relu(self.nn_gc1(x), 0.2)
+            feat = feat / (1. * self.n_agents)
+            out = F.leaky_relu(self.gc2(feat, self.adj), 0.2)
+            out = out + F.leaky_relu(self.nn_gc2(feat), 0.2)
+            out = out / (1. * self.n_agents)
 
         # Pooling
         if self.pool_type == 'avg':

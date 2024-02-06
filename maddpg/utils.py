@@ -167,4 +167,6 @@ def get_args():
     parser.add_argument('--eval_freq', type=int, default=1000)
     parser.add_argument("--display", action="store_true", default=False)
     parser.add_argument("--num_agents", type=int, default=10)
+    parser.add_argument("--num_seeds", type=int, default=1)
+    parser.add_argument("--activation", type=str, default='relu', help='relu|leaky_relu')
     return parser.parse_args()

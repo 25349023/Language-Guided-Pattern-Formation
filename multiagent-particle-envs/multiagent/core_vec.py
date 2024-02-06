@@ -6,6 +6,7 @@ from numba import deferred_type
 from numba.experimental import jitclass
 import copy
 
+
 @jitclass([('p_pos', float64[:]), ('p_vel', float64[:])])
 class EntityState_nb(object):
     def __init__(self):
@@ -18,6 +19,7 @@ class EntityState_nb(object):
 EntityState_type = deferred_type()
 EntityState_type.define(EntityState_nb.class_type.instance_type)
 
+
 @jitclass([('size', float32), ('movable', boolean), ('collide', boolean), ('state', EntityState_type)])
 class Entity_nb(object):
     def __init__(self):
@@ -29,12 +31,11 @@ class Entity_nb(object):
         self.movable = False
 
 
-
 @jit(nopython=True)
 def get_collision_force_nb(entity_a, entity_b, contact_margin, contact_force):
-    #if (not entity_a.collide) or (not entity_b.collide):
+    # if (not entity_a.collide) or (not entity_b.collide):
     #    return np.array([0, 0]), np.array([0, 0])  # not a collider
-    #if (entity_a is entity_b):
+    # if (entity_a is entity_b):
     #    return np.array([0, 0]), np.array([0, 0])  # don't collide against itself
     # compute actual distance between entities
     delta_pos = entity_a.state.p_pos - entity_b.state.p_pos
@@ -56,10 +57,10 @@ def apply_environment_force_nb(p_force, entities, contact_margin, contact_force)
         for b, entity_b in enumerate(entities):
             if b <= a: continue
             [f_a, f_b] = get_collision_force_nb(entity_a, entity_b, contact_margin, contact_force)
-            #if f_a is not None:
-                #if p_force[a] is None: p_force[a] = 0.0
+            # if f_a is not None:
+            # if p_force[a] is None: p_force[a] = 0.0
             p_force[a] = f_a + p_force[a]
-            #if f_b is not None:
+            # if f_b is not None:
             #    if p_force[b] is None: p_force[b] = 0.0
             p_force[b] = f_b + p_force[b]
     return p_force
@@ -196,7 +197,6 @@ class World(object):
         self.dist_min = 2 * self.agents[0].size
         return self.agents + self.landmarks
 
-
     # return all agents controllable by external policies
     @property
     def policy_agents(self):
@@ -237,23 +237,17 @@ class World(object):
 
     def apply_environment_force(self, p_force):
         # simple (but inefficient) collision response
-        for a,entity_a in enumerate(self.entities):
-            for b,entity_b in enumerate(self.entities):
-                if(b <= a): continue
+        for a, entity_a in enumerate(self.entities):
+            for b, entity_b in enumerate(self.entities):
+                if (b <= a): continue
                 [f_a, f_b] = self.get_collision_force(entity_a, entity_b)
-                if(f_a is not None):
-                    if(p_force[a] is None): p_force[a] = 0.0
-                    p_force[a] = f_a + p_force[a] 
-                if(f_b is not None):
-                    if(p_force[b] is None): p_force[b] = 0.0
-                    p_force[b] = f_b + p_force[b]        
+                if (f_a is not None):
+                    if (p_force[a] is None): p_force[a] = 0.0
+                    p_force[a] = f_a + p_force[a]
+                if (f_b is not None):
+                    if (p_force[b] is None): p_force[b] = 0.0
+                    p_force[b] = f_b + p_force[b]
         return p_force
-
-
-
-
-
-
 
     # integrate physical state
     def integrate_state(self, p_force):
@@ -300,8 +294,8 @@ class World(object):
 
     def apply_environment_force_vec(self, p_force):
 
-        if self.force_mask is None:
-            self.force_mask = self.get_force_mask()
+        # if self.force_mask is None:
+        self.force_mask = self.get_force_mask()
         n_entities = len(self.entities)
         e_pos = np.array([[e.state.p_pos for e in self.entities]])
         e_pos1 = e_pos.repeat(n_entities, axis=0)
@@ -311,7 +305,8 @@ class World(object):
         dist = np.sqrt(np.sum(np.square(delta_pos), axis=2)) + np.eye(n_entities)
         k = self.contact_margin
         penetration = np.logaddexp(0, -(dist - self.dist_min) / k) * k
-        force = self.contact_force * delta_pos / dist.reshape(n_entities, n_entities, 1) * penetration.reshape(n_entities, n_entities, 1)
+        force = self.contact_force * delta_pos / dist.reshape(n_entities, n_entities, 1) * penetration.reshape(
+            n_entities, n_entities, 1)
 
         masked_force = force * self.force_mask
         sum_force = np.sum(masked_force, axis=1)
@@ -319,7 +314,6 @@ class World(object):
         for i, f in enumerate(p_force):
             if f is None: p_force[i] = 0
             p_force[i] += sum_force[i]
-
 
         """
         for a, entity_a in enumerate(self.entities):

@@ -133,7 +133,7 @@ def get_args():
     parser.add_argument('--num_episodes', type=int, default=60000, metavar='N',
                         help='number of episodes (default: 1000)')
     parser.add_argument('--hidden_size', type=int, default=128, metavar='N',
-                        help='number of episodes (default: 128)')
+                        help='hidden size (default: 128)')
     parser.add_argument('--updates_per_step', type=int, default=8, metavar='N',
                         help='model updates per simulator step (default: 5)')
     parser.add_argument('--critic_updates_per_step', type=int, default=8, metavar='N',

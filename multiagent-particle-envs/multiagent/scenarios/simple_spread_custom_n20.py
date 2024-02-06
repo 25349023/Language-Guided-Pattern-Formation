@@ -10,7 +10,8 @@ from multiagent.scenario import BaseScenario
 from bridson import poisson_disc_samples
 
 
-lm_pattern = re.compile(r'''\[(\(('.*?'|".*?"),\s*\[\d*,\s*\d*,\s*\d*,\s*\d*\]\)(,\s*)?)+\]''')
+# lm_pattern = re.compile(r'''\[(\(('.*?'|".*?"),\s*\[\d*,\s*\d*,\s*\d*,\s*\d*\]\)(,\s*)?)+\]''')
+lm_pattern = re.compile(r'''\[(\[\d*,\s*\d*\](,\s*)?)+\]''')
 
 
 class Scenario(BaseScenario):
@@ -47,28 +48,24 @@ class Scenario(BaseScenario):
         return world
 
     def get_landmarks(self):
-        def remap(v, offset, reverse=False):
+        def remap(v, offset):
             new_range = self.world_radius - boundary
             pos_at_origin = (v - offset) / scale * new_range * 2
 
-            if reverse:
-                return -pos_at_origin + self.world_radius
-            else:
-                return pos_at_origin + self.world_radius
+            return pos_at_origin + self.world_radius
 
         prompt = ''
         while not lm_pattern.match(prompt):
             prompt = input('please input the landmark settings: ')
 
         landmarks = ast.literal_eval(prompt)
-        landmarks = [(x + w / 2, y + h / 2) for obj, (x, y, w, h) in landmarks]
         min_x, max_x = min(x for x, _ in landmarks), max(x for x, _ in landmarks)
         min_y, max_y = min(y for _, y in landmarks), max(y for _, y in landmarks)
         mid_x, mid_y = (min_x + max_x) / 2, (min_y + max_y) / 2
 
         scale = max(max_y - min_y, max_x - min_x)
         boundary = 0.4
-        landmarks = [(remap(x, mid_x), remap(y, mid_y, True)) for x, y in landmarks]
+        landmarks = [(remap(x, mid_x), remap(y, mid_y)) for x, y in landmarks]
 
         return landmarks
 

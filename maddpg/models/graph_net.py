@@ -2,11 +2,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from models.graph_layers import GraphConvLayer, MessageFunc, UpdateFunc
+from torch_geometric.nn.dense import DenseGATConv
 
 
 class GraphNetHetro(nn.Module):
 
-  # A graph net that supports different edge attributes.
+    # A graph net that supports different edge attributes.
 
     def __init__(self, sa_dim, n_agents, hidden_size, agent_groups, agent_id=0,
                  pool_type='avg', use_agent_id=False):
@@ -50,7 +51,8 @@ class GraphNetHetro(nn.Module):
         # Create group embeddings.
         num_groups = len(agent_groups)
 
-        self.group_emb = nn.ParameterList([nn.Parameter(torch.randn(1, 1, group_emb_dim), requires_grad=True) for k in range(num_groups)])
+        self.group_emb = nn.ParameterList(
+            [nn.Parameter(torch.randn(1, 1, group_emb_dim), requires_grad=True) for k in range(num_groups)])
 
         # Assumes a fully connected graph.
         self.register_buffer('adj', (torch.ones(n_agents, n_agents) - torch.eye(n_agents)) / self.n_agents)
@@ -86,9 +88,9 @@ class GraphNetHetro(nn.Module):
         # Concat group embeddings, concat to input layer.
         group_emb_list = []
         for k_idx, k in enumerate(self.agent_groups):
-          group_emb_list += [self.group_emb[k_idx]]*k
+            group_emb_list += [self.group_emb[k_idx]] * k
         group_emb = torch.cat(group_emb_list, 1)
-        group_emb_batch = torch.cat([group_emb]*x.shape[0], 0)
+        group_emb_batch = torch.cat([group_emb] * x.shape[0], 0)
 
         x = torch.cat([x, group_emb_batch], -1)
 
@@ -152,7 +154,8 @@ class GraphNetV(nn.Module):
         # Create group embeddings.
         num_groups = len(agent_groups)
 
-        self.group_emb = nn.ParameterList([nn.Parameter(torch.randn(1, 1, group_emb_dim), requires_grad=True) for k in range(num_groups)])
+        self.group_emb = nn.ParameterList(
+            [nn.Parameter(torch.randn(1, 1, group_emb_dim), requires_grad=True) for k in range(num_groups)])
 
         # Assumes a fully connected graph.
         self.register_buffer('adj', (torch.ones(n_agents, n_agents) - torch.eye(n_agents)) / self.n_agents)
@@ -188,9 +191,9 @@ class GraphNetV(nn.Module):
         # Concat group embeddings, concat to input layer.
         group_emb_list = []
         for k_idx, k in enumerate(self.agent_groups):
-          group_emb_list += [self.group_emb[k_idx]]*k
+            group_emb_list += [self.group_emb[k_idx]] * k
         group_emb = torch.cat(group_emb_list, 1)
-        group_emb_batch = torch.cat([group_emb]*x.shape[0], 0)
+        group_emb_batch = torch.cat([group_emb] * x.shape[0], 0)
 
         x = torch.cat([x, group_emb_batch], -1)
 
@@ -207,6 +210,7 @@ class GraphNetV(nn.Module):
         elif self.pool_type == 'max':
             ret, _ = out.max(1)
         return ret
+
 
 class GraphNet(nn.Module):
     """
@@ -264,11 +268,85 @@ class GraphNet(nn.Module):
             agent_att = torch.cat([self.agent_att] * x.shape[0], 0)
             x = torch.cat([x, agent_att], 1)
 
-        feat = F.relu(self.gc1(x, self.adj))
-        feat = feat + F.relu(self.nn_gc1(x))
+        feat = F.leaky_relu(self.gc1(x, self.adj), 0.2)
+        feat = feat + F.leaky_relu(self.nn_gc1(x), 0.2)
         feat = feat / (1. * self.n_agents)
-        out = F.relu(self.gc2(feat, self.adj))
-        out = out + F.relu(self.nn_gc2(feat))
+        out = F.leaky_relu(self.gc2(feat, self.adj), 0.2)
+        out = out + F.leaky_relu(self.nn_gc2(feat), 0.2)
+        out = out / (1. * self.n_agents)
+
+        # Pooling
+        if self.pool_type == 'avg':
+            ret = out.mean(1)  # Pooling over the agent dimension.
+        elif self.pool_type == 'max':
+            ret, _ = out.max(1)
+
+        # Compute V
+        V = self.V(ret)
+        return V
+
+
+class GraphAttnNet(nn.Module):
+    """
+    Graph attention network
+    """
+
+    def __init__(self, sa_dim, n_agents, hidden_size, agent_id=0,
+                 pool_type='avg', use_agent_id=False):
+        super(GraphAttnNet, self).__init__()
+        self.sa_dim = sa_dim
+        self.n_agents = n_agents
+        self.pool_type = pool_type
+        if use_agent_id:
+            agent_id_attr_dim = 2
+            self.gc1 = DenseGATConv(sa_dim + agent_id_attr_dim, hidden_size)
+            self.nn_gc1 = nn.Linear(sa_dim + agent_id_attr_dim, hidden_size)
+        else:
+            self.gc1 = DenseGATConv(sa_dim, hidden_size)
+            self.nn_gc1 = nn.Linear(sa_dim, hidden_size)
+        self.gc2 = DenseGATConv(hidden_size, hidden_size)
+        self.nn_gc2 = nn.Linear(hidden_size, hidden_size)
+
+        self.V = nn.Linear(hidden_size, 1)
+        self.V.weight.data.mul_(0.1)
+        self.V.bias.data.mul_(0.1)
+
+        # Assumes a fully connected graph.
+        self.register_buffer('adj', (torch.ones(n_agents, n_agents) - torch.eye(n_agents)) / self.n_agents)
+
+        self.use_agent_id = use_agent_id
+
+        self.agent_id = agent_id
+
+        if use_agent_id:
+            self.curr_agent_attr = nn.Parameter(
+                torch.randn(agent_id_attr_dim), requires_grad=True)
+            self.other_agent_attr = nn.Parameter(
+                torch.randn(agent_id_attr_dim), requires_grad=True)
+
+            agent_att = []
+            for k in range(self.n_agents):
+                if k == self.agent_id:
+                    agent_att.append(self.curr_agent_attr.unsqueeze(-1))
+                else:
+                    agent_att.append(self.other_agent_attr.unsqueeze(-1))
+            agent_att = torch.cat(agent_att, -1)
+            self.agent_att = agent_att.unsqueeze(0)
+
+    def forward(self, x):
+        """
+        :param x: [batch_size, self.sa_dim, self.n_agent] tensor
+        :return: [batch_size, self.output_dim] tensor
+        """
+        if self.use_agent_id:
+            agent_att = torch.cat([self.agent_att] * x.shape[0], 0)
+            x = torch.cat([x, agent_att], 1)
+
+        feat = F.leaky_relu(self.gc1(x, self.adj), 0.2)
+        feat = feat + F.leaky_relu(self.nn_gc1(x), 0.2)
+        feat = feat / (1. * self.n_agents)
+        out = F.leaky_relu(self.gc2(feat, self.adj), 0.2)
+        out = out + F.leaky_relu(self.nn_gc2(feat), 0.2)
         out = out / (1. * self.n_agents)
 
         # Pooling

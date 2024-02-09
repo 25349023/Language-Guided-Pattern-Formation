@@ -206,9 +206,20 @@ class Scenario(BaseScenario):
         dist_idx = np.argsort(other_dist)
         other_pos = [other_pos[i] for i in dist_idx[:self.n_others]]
         # other_pos = sorted(other_pos, key=lambda k: [k[0], k[1]])
-        obs = np.concatenate([agent.state.p_vel] + [agent.state.p_pos] + entity_pos + other_pos)
+        # obs = np.concatenate([agent.state.p_vel] + [agent.state.p_pos] + entity_pos + other_pos)
+        obs = np.concatenate([self.get_dire(agent.state.p_vel)] + [agent.state.p_pos] + entity_pos + other_pos)
 
         return obs
+
+    def get_dire(self, velocity):
+        direction = np.array([self.quantize(v) for v in velocity])
+        return direction
+
+    @staticmethod
+    def quantize(v):
+        if abs(v) < 1e-6:
+            return 0.0
+        return 1.0 if v > 0 else -1.0
 
     def seed(self, seed=None):
         self.np_rnd.seed(seed)

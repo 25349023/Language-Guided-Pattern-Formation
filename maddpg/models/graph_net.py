@@ -1,8 +1,10 @@
+import functools
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from models.graph_layers import GraphConvLayer, MessageFunc, UpdateFunc
-from torch_geometric.nn.dense import DenseGATConv
+from torch_geometric.nn.dense import DenseGATConv, DenseGraphConv
 
 
 class GraphNetHetro(nn.Module):
@@ -232,8 +234,12 @@ class GraphNet(nn.Module):
         else:
             self.gc1 = GraphConvLayer(sa_dim, hidden_size)
             self.nn_gc1 = nn.Linear(sa_dim, hidden_size)
+
         self.gc2 = GraphConvLayer(hidden_size, hidden_size)
         self.nn_gc2 = nn.Linear(hidden_size, hidden_size)
+
+        # self.gc3 = GraphConvLayer(hidden_size, hidden_size)
+        # self.nn_gc3 = nn.Linear(hidden_size, hidden_size)
 
         self.V = nn.Linear(hidden_size, 1)
         self.V.weight.data.mul_(0.1)
@@ -271,19 +277,23 @@ class GraphNet(nn.Module):
             x = torch.cat([x, agent_att], 1)
 
         if self.activation == 'relu':
-            feat = F.relu(self.gc1(x, self.adj))
-            feat = feat + F.relu(self.nn_gc1(x))
-            feat = feat / (1. * self.n_agents)
-            out = F.relu(self.gc2(feat, self.adj))
-            out = out + F.relu(self.nn_gc2(feat))
-            out = out / (1. * self.n_agents)
+            activation = F.relu
         elif self.activation == 'leaky_relu':
-            feat = F.leaky_relu(self.gc1(x, self.adj), 0.2)
-            feat = feat + F.leaky_relu(self.nn_gc1(x), 0.2)
-            feat = feat / (1. * self.n_agents)
-            out = F.leaky_relu(self.gc2(feat, self.adj), 0.2)
-            out = out + F.leaky_relu(self.nn_gc2(feat), 0.2)
-            out = out / (1. * self.n_agents)
+            activation = functools.partial(F.leaky_relu, negative_slope=0.1)
+        else:
+            raise ValueError('Unsupported activation function')
+
+        feat = activation(self.gc1(x, self.adj))
+        feat = feat + activation(self.nn_gc1(x))
+        feat = feat / (1. * self.n_agents)
+
+        # feat = activation(self.gc2(feat, self.adj))
+        # feat = feat + activation(self.nn_gc2(feat))
+        # feat = feat / (1. * self.n_agents)
+
+        out = activation(self.gc2(feat, self.adj))
+        out = out + activation(self.nn_gc2(feat))
+        out = out / (1. * self.n_agents)
 
         # Pooling
         if self.pool_type == 'avg':

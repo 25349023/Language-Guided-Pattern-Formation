@@ -4,3 +4,4 @@ __pycache__/
 ckpt_plot/
 
 test_input.txt
+test_obs/

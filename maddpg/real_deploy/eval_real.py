@@ -1,11 +1,30 @@
+import os
 import contextlib
 import time
 
 import numpy as np
 import torch
 
-from tools import sim2real_coord, get_landmarks
+import matplotlib.pyplot as plt
+from datetime import datetime
 
+from tools import sim2real_coord, real2sim_coord, get_landmarks
+from osxDriver import osx001Driver
+
+
+class Agent:
+    def __init__(self, position, velocity, robot_id):
+        self.position = position
+        self.velocity = velocity
+        self.robot_id = robot_id
+
+def get_agents(robot_id_list, robot_pos_dict, pos_prev_dict):
+    agents = []
+    for robot_id in robot_id_list:
+        current_pos = np.array(real2sim_coord(*robot_pos_dict[robot_id]))
+        prev_pos = np.array(real2sim_coord(*pos_prev_dict[robot_id]))
+        agents.append(Agent(current_pos, current_pos - prev_pos, robot_id))
+    return agents
 
 @contextlib.contextmanager
 def temp_seed(seed):
@@ -51,7 +70,7 @@ def single_agent_observation(agents, i, landmarks):
     # positions of all landmarks relative to the curr_agent itself
     landmark_pos = []
     for landmark in landmarks:
-        landmark_pos.append(landmark.position - curr_agent.position)
+        landmark_pos.append(landmark - curr_agent.position)
 
     # positions of other agents relative to the curr_agent itself
     other_pos = []
@@ -84,49 +103,154 @@ def all_agent_observation(agents, landmarks):
             for i in range(len(agents))]
 
 
-def eval_model_real(args, agent):
-    device = torch.device("cuda:0" if torch.cuda.is_available() and args.cuda else "cpu")
+def eval_model_real(args, policy, update_interval=1):
+    try:
+        device = torch.device("cuda:0" if torch.cuda.is_available() and args.cuda else "cpu")
+        save_dir = f'real_deploy/data/{datetime.now().strftime("%Y%m%d%H%M%S")}'
+        save_obs_dir = f'{save_dir}/obs'
+        os.makedirs(save_obs_dir, exist_ok=True)
+        save_goal_dir = f'{save_dir}/goals'
+        os.makedirs(save_goal_dir, exist_ok=True)
 
-    # TODO 1: Build / Initialize real robot agents
-    agents = ...
-    n_agents = args.num_agents  # default is 10 agents
-    landmarks = get_landmarks(n_agents)
+        # set robot id
+        # robot_id_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        robot_id_list = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        pos_prev_dict = {i: None for i in robot_id_list}
 
-    print('=================== start eval ===================')
-    with temp_seed(args.seed):
-        for n_eval in range(args.num_eval_runs):
+        # open port
+        driver1 = osx001Driver('COM3')
+        driver2 = osx001Driver('COM4')
+        driver1.flush_buffer()
+        driver2.flush_buffer()
 
-            # TODO 2-3: Check this function call can give the proper observation
-            obs_n = all_agent_observation(agents, landmarks)
-            episode_step = 0
-            while True:
-                action_n = agent.select_action(
-                    torch.Tensor(obs_n).to(device), action_noise=True,
-                    param_noise=False).squeeze().cpu().numpy()
+        # set parameter
+        delta_end = 1
+        for robot_id in robot_id_list:
+            if robot_id <= 9:
+                driver1.set_parameter(robot_id, delta_end=delta_end)
+            else:
+                driver2.set_parameter(robot_id, delta_end=delta_end)
 
-                # TODO 5: tweak the goal position calculation,
-                #         since in the simulator it is computed based on force and velocity
-                goal_pos = []
-                for agent, act in zip(agents, action_n):
-                    idle, right, left, up, down = act
-                    dx = (right - left) * 0.1
-                    dy = (up - down) * 0.1
-                    goal = (agent.position[0] + dx, agent.position[1] + dy)
-                    goal_pos.append(sim2real_coord(*goal))
+        n_agents = args.num_agents  # default is 10 agents
+        landmarks = get_landmarks(n_agents)
+        
+        # visualize the landmarks
+        transferred_positions = np.array([sim2real_coord(x, y) for x, y in landmarks])
+        # Plotting
+        plt.figure(figsize=(12, 6))
+        # Plot for landmarks
+        plt.subplot(1, 2, 1)
+        plt.scatter(landmarks[:, 0], landmarks[:, 1], color='blue', label='Landmarks')
+        for i, robot_id in enumerate(robot_id_list):
+            plt.annotate(str(robot_id), (landmarks[i, 0], landmarks[i, 1]))
+        plt.xlim(-3, 3)
+        plt.ylim(-3, 3)
+        plt.title('Landmarks')
+        plt.xlabel('x')
+        plt.ylabel('y')
+        # Plot for transferred positions
+        plt.subplot(1, 2, 2)
+        plt.scatter(transferred_positions[:, 0], transferred_positions[:, 1], color='red', label='Transferred Positions')
+        for i, robot_id in enumerate(robot_id_list):
+            plt.annotate(str(robot_id), (transferred_positions[i, 0], transferred_positions[i, 1]))
+        plt.xlim(-255, 255)
+        plt.ylim(-255, 255)
+        plt.title('Transferred Positions')
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.legend()
+        # Display the plots
+        plt.tight_layout()
+        plt.savefig(f'{save_dir}/landmarks.png')
 
-                # TODO 3: Send the goal positions to real robots and then update agents information
-                # do something here...
+        print('=================== start eval ===================')
+        with temp_seed(args.seed):
+            for n_eval in range(args.num_eval_runs):
+                episode_step = 0
+                while True:
+                    # receive the position of the robots
+                    robot_pos_dict = {}
+                    while True:
+                        # Get the initial position of the robots from both drivers
+                        robot_pos_driver1 = driver1.get_id_position()
+                        robot_pos_driver2 = driver2.get_id_position()
+                        # Update the robot_pos_dict with the new positions
+                        robot_pos_dict.update(robot_pos_driver1)
+                        robot_pos_dict.update(robot_pos_driver2)
+                        # Check if we have received positions for all robot IDs
+                        if all(robot_id in robot_pos_dict for robot_id in robot_id_list):
+                            print("Received positions for all robots. Moving to the next part of the code.")
+                            break
 
-                episode_step += 1
-                terminal = (episode_step >= args.num_steps)
+                    # set previous position to the initial position
+                    # agents = get_agents(robot_id_list, robot_pos_dict, robot_pos_dict)
+                    if episode_step == 0:
+                        agents = get_agents(robot_id_list, robot_pos_dict, robot_pos_dict)
+                    else:
+                        agents = get_agents(robot_id_list, robot_pos_dict, pos_prev_dict)
+                    
+                    obs_n = all_agent_observation(agents, landmarks)
+                    np.save(f'{save_obs_dir}/obs_{episode_step}.npy', np.array(obs_n))
+                    action_n = policy.select_action(
+                        torch.Tensor(obs_n).to(device), action_noise=True,
+                        param_noise=False).squeeze().cpu().numpy()
 
-                # TODO 4: get the next observation
-                obs_n = all_agent_observation(agents, landmarks)
+                    goal_pos = []
+                    for agent, act in zip(agents, action_n):
+                        idle, right, left, up, down = act
+                        dx = (right - left) * 0.015
+                        dy = (up - down) * 0.015
+                        print(f'Robot {agent.robot_id} - dx: {dx}, dy: {dy}')
+                        print(f'Robot {agent.robot_id} - x: {agent.position[0]}, y: {agent.position[1]}')
+                        goal = (agent.position[0] + dx, agent.position[1] + dy)
+                        goal_pos.append(sim2real_coord(*goal))
 
-                time.sleep(0.1)
-                # eval_env.render()
+                    if episode_step % update_interval == 0:
+                        for robot_id, goal in zip(robot_id_list, goal_pos):
+                            if robot_id <= 9:
+                                # driver1.resetIMU(robot_id)
+                                driver1.setTargetPosition(robot_id, int(goal[0]), int(goal[1]))
+                            else:
+                                # driver2.resetIMU(robot_id)
+                                driver2.setTargetPosition(robot_id, int(goal[0]), int(goal[1]))
+                        move_start_time = time.time()
+                        while(True):
+                            driver1.checkStatusPacket()
+                            driver2.checkStatusPacket()
+                            if time.time() - move_start_time > 0.08:
+                                driver1.flush_buffer()
+                                driver2.flush_buffer()
+                                break
+                    
+                    # update robot prev position
+                    for robot_id in robot_id_list:
+                        pos_prev_dict[robot_id] = robot_pos_dict[robot_id]
+                    
+                    # visualize goal pos
+                    x_coords, y_coords = zip(*goal_pos)
+                    plt.figure(figsize=(10, 6))
+                    plt.scatter(x_coords, y_coords, color='blue', marker='o')
+                    for robot_id, goal in zip(robot_id_list, goal_pos):
+                        plt.annotate(robot_id, goal, textcoords="offset points", xytext=(0,10), ha='center')
+                    plt.title('Goal Positions')
+                    plt.xlabel('X Coordinate')
+                    plt.ylabel('Y Coordinate')
+                    plt.xlim(-255, 255)
+                    plt.ylim(-255, 255)
+                    plt.grid(True)
+                    plt.savefig(f'{save_goal_dir}/goal_positions_{episode_step}.png')
 
-                if terminal:
-                    break
+                    episode_step += 1
+                    terminal = (episode_step >= args.num_steps)
 
-    print("========================================================")
+                    time.sleep(0.1)
+
+                    if terminal:
+                        break
+    except Exception as e:
+        print(e)
+    finally:
+        driver1.flush_buffer()
+        driver2.flush_buffer()
+
+    # print("========================================================")

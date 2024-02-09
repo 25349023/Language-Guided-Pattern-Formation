@@ -7,8 +7,8 @@ import numpy as np
 lm_pattern = re.compile(r'''\[(\(('.*?'|".*?"),\s*\[\d*,\s*\d*,\s*\d*,\s*\d*\]\)(,\s*)?)+\]''')
 
 SIM_RADIUS = 3.0  # simulator coordinates range from (-3, -3) to (3, 3)
-REAL_RADIUS = 170.0  # limited by the y-axis of the table
-REAL_OFFSET = 85.0
+REAL_RADIUS = 255  # limited by the y-axis of the table
+REAL_OFFSET = 0
 
 
 def get_landmarks(num):
@@ -44,11 +44,11 @@ def get_landmarks(num):
 
 def real2sim_coord(x, y):
     sim_x = x / REAL_RADIUS * SIM_RADIUS
-    sim_y = -(y - REAL_OFFSET) / REAL_RADIUS * SIM_RADIUS
+    sim_y = (y - REAL_OFFSET) / REAL_RADIUS * SIM_RADIUS
     return sim_x, sim_y
 
 
 def sim2real_coord(x, y):
     real_x = x / SIM_RADIUS * REAL_RADIUS
-    real_y = -(y / SIM_RADIUS * REAL_RADIUS) + REAL_OFFSET
+    real_y = (y / SIM_RADIUS * REAL_RADIUS) + REAL_OFFSET
     return real_x, real_y

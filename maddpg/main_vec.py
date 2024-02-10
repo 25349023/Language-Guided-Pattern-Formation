@@ -1,3 +1,4 @@
+import json
 import os
 import random
 import time
@@ -18,6 +19,11 @@ from utils import *
 
 
 def run_experiment(exp_name, test_q, args):
+    exp_save_dir = os.path.join(args.save_dir, exp_name)
+    os.makedirs(exp_save_dir, exist_ok=args.force)
+    with open('train_args.json') as f:
+        json.dump(vars(args), f)
+
     device = torch.device("cuda:0" if torch.cuda.is_available() and args.cuda else "cpu")
 
     env = make_env(args.scenario, args)
@@ -63,8 +69,6 @@ def run_experiment(exp_name, test_q, args):
     rewards = []
     total_numsteps = 0
     updates = 0
-    exp_save_dir = os.path.join(args.save_dir, exp_name)
-    os.makedirs(exp_save_dir, exist_ok=True)
     best_eval_reward, best_good_eval_reward, best_adversary_eval_reward = -1000000000, -1000000000, -1000000000
     start_time = time.time()
     copy_actor_policy(agent, eval_agent)
@@ -137,6 +141,8 @@ def run_experiment(exp_name, test_q, args):
             test_q.put([eval_agent, tr_log])
 
     env.close()
+
+    # TODO: record different metrics and return
     return episode_reward
 
 

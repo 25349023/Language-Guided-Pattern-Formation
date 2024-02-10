@@ -11,7 +11,15 @@ REAL_RADIUS = 170.0  # limited by the y-axis of the table
 REAL_OFFSET = 85.0
 
 
-def get_landmarks(num):
+PROMPT = {
+    'circle': '[[322, 334], [362, 284], [356, 226], [322, 181], [250, 164], [190, 181], [147, 227], [153, 283], [192, 336], [256, 360]]',
+    'rect': '[[233, 317], [277, 317], [328, 317], [329, 253], [330, 193], [234, 194], [187, 195], [183, 254], [185, 318], [283, 192]]',
+    'triangle': '[[255, 348], [218, 296], [173, 244], [139, 185], [299, 295], [340, 237], [375, 186], [316, 186], [259, 185], [200, 185]]',
+    'pyramid': '[[253, 357], [215, 305], [170, 253], [135, 195], [296, 304], [255, 253], [339, 253], [381, 195], [302, 194], [216, 194]]'
+}
+
+
+def get_landmarks(num, shape='circle'):
     def remap(v, offset):
         new_range = SIM_RADIUS - boundary
         pos_at_origin = (v - offset) / scale * new_range * 2
@@ -19,8 +27,7 @@ def get_landmarks(num):
         return pos_at_origin
 
     # for testing, it is a triangle consists of 10 objects
-    # prompt = """[('a cherry', [251, 156, 20, 20]), ('a cherry', [231, 176, 20, 20]), ('a cherry', [271, 176, 20, 20]), ('a cherry', [211, 196, 20, 20]), ('a cherry', [251, 196, 20, 20]), ('a cherry', [291, 196, 20, 20]), ('a cherry', [191, 216, 20, 20]), ('a cherry', [231, 216, 20, 20]), ('a cherry', [271, 216, 20, 20]), ('a cherry', [311, 216, 20, 20])]"""
-    prompt = '[[255, 348], [218, 296], [173, 244], [139, 185], [299, 295], [340, 237], [375, 186], [316, 186], [259, 185], [200, 185]]'
+    prompt = PROMPT[shape]
 
     # prompt = ''
     # while not lm_pattern.match(prompt):

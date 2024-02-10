@@ -21,7 +21,7 @@ from utils import *
 def run_experiment(exp_name, test_q, args):
     exp_save_dir = os.path.join(args.save_dir, exp_name)
     os.makedirs(exp_save_dir, exist_ok=args.force)
-    with open('train_args.json') as f:
+    with open(f'{exp_save_dir}/train_args.json', 'w') as f:
         json.dump(vars(args), f)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() and args.cuda else "cpu")

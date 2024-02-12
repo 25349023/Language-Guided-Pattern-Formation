@@ -1,5 +1,7 @@
+import dataclasses
 import json
 import os
+import pprint
 import random
 import time
 from multiprocessing import Queue
@@ -9,6 +11,7 @@ import numpy as np
 import torch
 import torch.multiprocessing as mp
 
+import metrics
 import multiagent.scenarios as scenarios
 from ddpg_vec import DDPG
 from ddpg_vec import hard_update
@@ -18,7 +21,7 @@ from replay_memory import ReplayMemory, Transition
 from utils import *
 
 
-def run_experiment(exp_name, test_q, args):
+def run_experiment(exp_name, args, test_q, metric_q):
     exp_save_dir = os.path.join(args.save_dir, exp_name)
     os.makedirs(exp_save_dir, exist_ok=args.force)
     with open(f'{exp_save_dir}/train_args.json', 'w') as f:
@@ -62,9 +65,16 @@ def run_experiment(exp_name, test_q, args):
                           args.num_steps, args.critic_dec_cen, args.target_update_mode, 'cpu')
 
     memory = ReplayMemory(args.replay_size)
-    feat_dims = []
-    for i in range(n_agents):
-        feat_dims.append(env.observation_space[i].shape[0])
+
+    def evaluate_signal(metric=False):
+        tr_log = {'num_adversary': 0,
+                  'best_good_eval_reward': best_good_eval_reward,
+                  'best_adversary_eval_reward': best_adversary_eval_reward,
+                  'exp_save_dir': exp_save_dir, 'total_numsteps': total_numsteps,
+                  'value_loss': value_loss, 'policy_loss': policy_loss,
+                  'i_episode': i_episode, 'start_time': start_time}
+        copy_actor_policy(agent, eval_agent)
+        test_q.put([eval_agent, tr_log, metric])
 
     rewards = []
     total_numsteps = 0
@@ -131,19 +141,14 @@ def run_experiment(exp_name, test_q, args):
         # writer.add_scalar('reward/train', episode_reward, i_episode)
         rewards.append(episode_reward)
         if (i_episode + 1) % args.eval_freq == 0:
-            tr_log = {'num_adversary': 0,
-                      'best_good_eval_reward': best_good_eval_reward,
-                      'best_adversary_eval_reward': best_adversary_eval_reward,
-                      'exp_save_dir': exp_save_dir, 'total_numsteps': total_numsteps,
-                      'value_loss': value_loss, 'policy_loss': policy_loss,
-                      'i_episode': i_episode, 'start_time': start_time}
-            copy_actor_policy(agent, eval_agent)
-            test_q.put([eval_agent, tr_log])
+            evaluate_signal()
 
     env.close()
+    evaluate_signal(True)
+    eval_metrics = metric_q.get()
 
     # TODO: record different metrics and return
-    return episode_reward
+    return eval_metrics
 
 
 if __name__ == '__main__':
@@ -161,11 +166,12 @@ if __name__ == '__main__':
 
     # for mp test
     test_q = Queue()
+    metric_q = Queue()
     done_training = Value('i', False)
-    p = mp.Process(target=eval_model_q, args=(test_q, done_training, args))
+    p = mp.Process(target=eval_model_q, args=(test_q, done_training, args), kwargs={'metric_q': metric_q})
     p.start()
 
-    train_rewards = []
+    metric_results = []
     for i in range(args.num_seeds):
         if args.num_seeds > 1:
             args.seed = random.randrange(1000000)
@@ -173,11 +179,15 @@ if __name__ == '__main__':
         else:
             exp_name = args.exp_name
 
-        tr_rw = run_experiment(exp_name, test_q, args)
-        train_rewards.append(tr_rw)
+        metric_results.append(run_experiment(exp_name, args, test_q, metric_q))
 
-    print(f'training rewards for each seed = {train_rewards}')
-    time.sleep(5)
+    print(f'======== Evaluation Results ========')
+    pprint.pprint(metric_results)
+    print()
+    for field in dataclasses.fields(metrics.MetricRecord):
+        print(f'Avg {field.name}: {np.mean([getattr(m, field.name) for m in metric_results])}')
+
+    # time.sleep(5)
     done_training.value = True
 
     p.join()

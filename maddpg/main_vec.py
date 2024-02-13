@@ -171,14 +171,17 @@ if __name__ == '__main__':
     p.start()
 
     metric_results = []
-    for i in range(args.num_seeds):
-        if args.num_seeds > 1:
-            args.seed = random.randrange(1000000)
-            exp_name = args.exp_name + f'_seed{args.seed}'
-        else:
-            exp_name = args.exp_name
 
-        metric_results.append(run_experiment(exp_name, args, test_q, metric_q))
+    if args.num_seeds > 1:
+        exp_root = os.path.join(args.save_dir, args.exp_name)
+        os.makedirs(exp_root, exist_ok=args.force)
+
+        for i in range(args.num_seeds):
+            args.seed = random.randrange(1000000)
+            exp_name = os.path.join(args.exp_name, f'seed{args.seed}')
+            metric_results.append(run_experiment(exp_name, args, test_q, metric_q))
+    else:
+        metric_results.append(run_experiment(args.exp_name, args, test_q, metric_q))
 
     print(f'======== Evaluation Results ========')
     pprint.pprint(metric_results)

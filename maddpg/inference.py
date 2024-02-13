@@ -12,9 +12,9 @@ from eval_seq import eval_model_seq
 from utils import get_args
 
 
-def load_model(ckpt_dir, exp_name, dev_str):
+def load_model(ckpt_dir, dev_str):
     device = torch.device(dev_str)
-    agent_path = os.path.join(ckpt_dir, exp_name, 'agents_best.ckpt')
+    agent_path = os.path.join(ckpt_dir, 'agents_best.ckpt')
     eval_agent = torch.load(agent_path, map_location=device)['agents']
     eval_agent.device = dev_str
     return eval_agent
@@ -41,15 +41,16 @@ def main():
 
     if args.num_seeds == -1:
         metric_results = []
-        for dirname in glob.iglob(os.path.join(args.save_dir, f'{args.exp_name}_seed*')):
+        for dirname in glob.iglob(os.path.join(args.save_dir, args.exp_name, '*seed*')):
             try:
-                eval_agent = load_model(args.save_dir, os.path.basename(dirname), dev_str)
+                eval_agent = load_model(dirname, dev_str)
             except FileNotFoundError:
                 continue
             print(f'Running Evaluation for {os.path.basename(dirname)}')
             metric_results.append(eval_model_seq(args, eval_agent))
     else:
-        eval_agent = load_model(args.save_dir, args.exp_name, dev_str)
+        ckpt_dir = os.path.join(args.save_dir, args.exp_name)
+        eval_agent = load_model(ckpt_dir, dev_str)
         metric_results = [eval_model_seq(args, eval_agent)]
 
     pprint.pprint(metric_results)

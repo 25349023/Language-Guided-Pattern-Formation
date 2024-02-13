@@ -4,7 +4,7 @@ import time
 import numpy as np
 import torch
 
-from metrics import MetricRecord, completion_rate
+from metrics import MetricRecord, completion_rate, distance_to_landmark
 from utils import make_env
 
 
@@ -27,6 +27,8 @@ def eval_model_seq(args, agent):
     eval_rewards = []
     comp_rates = []
     collisions = []
+    avg_distance = []
+
     with temp_seed(args.seed):
         for n_eval in range(args.num_eval_runs):
             obs_n = eval_env.reset()
@@ -53,6 +55,7 @@ def eval_model_seq(args, agent):
                     print(f'test reward: {episode_reward}, total collision: {episode_collisions}')
                     comp_rates.append(completion_rate(eval_env))
                     collisions.append(episode_collisions)
+                    avg_distance.append(distance_to_landmark(eval_env))
                     break
 
     mean_reward = np.mean(eval_rewards)
@@ -63,5 +66,6 @@ def eval_model_seq(args, agent):
     eval_env.close()
     eval_env.close_renderer()
 
-    metric_record = MetricRecord(mean_reward, np.mean(comp_rates), np.mean(collisions))
+    metric_record = MetricRecord(mean_reward, np.mean(comp_rates),
+                                 np.mean(collisions), np.mean(avg_distance))
     return metric_record

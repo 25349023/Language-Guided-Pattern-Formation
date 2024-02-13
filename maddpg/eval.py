@@ -5,7 +5,7 @@ import time
 import numpy as np
 import torch
 
-from metrics import MetricRecord, completion_rate
+from metrics import MetricRecord, completion_rate, distance_to_landmark
 from utils import make_env, dict2csv
 
 
@@ -33,12 +33,13 @@ def eval_model_q(test_q, done_training, args, save=True, metric_q=None):
     while True:
         if not test_q.empty():
             print('=================== start eval ===================')
-
             eval_env.seed(args.seed + 10)
             eval_rewards = []
             comp_rates = []
             collisions = []
+            avg_distance = []
             agent, tr_log, ret_metric = test_q.get()
+
             with temp_seed(args.seed):
                 for n_eval in range(args.num_eval_runs):
                     obs_n = eval_env.reset()
@@ -66,6 +67,7 @@ def eval_model_q(test_q, done_training, args, save=True, metric_q=None):
                                 print(f'test reward: {episode_reward}, total collision: {episode_collisions}')
                             comp_rates.append(completion_rate(eval_env))
                             collisions.append(episode_collisions)
+                            avg_distance.append(distance_to_landmark(eval_env))
                             break
 
             mean_reward = np.mean(eval_rewards)
@@ -88,7 +90,8 @@ def eval_model_q(test_q, done_training, args, save=True, metric_q=None):
             dict2csv(plot, os.path.join(tr_log['exp_save_dir'], 'train_curve.csv'))
 
             if ret_metric:
-                metric_record = MetricRecord(mean_reward, np.mean(comp_rates), np.mean(collisions))
+                metric_record = MetricRecord(mean_reward, np.mean(comp_rates),
+                                             np.mean(collisions), np.mean(avg_distance))
                 metric_q.put(metric_record)
                 best_eval_reward, plot = reset_evaluation()
 

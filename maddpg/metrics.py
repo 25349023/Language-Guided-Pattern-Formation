@@ -9,7 +9,8 @@ import numpy as np
 class MetricRecord:
     eval_reward: float
     completion_rate: float
-    collision_avg_count: float
+    avg_collision_count: float
+    total_distance: float
 
 
 def completion_rate(eval_env):
@@ -27,3 +28,16 @@ def completion_rate(eval_env):
             cover_cnt += 1
 
     return cover_cnt / len(landmarks)
+
+
+def distance_to_landmark(eval_env):
+    world = eval_env.world
+    landmarks = np.array([l.state.p_pos for l in world.landmarks])
+    agents = np.array([a.state.p_pos for a in world.agents])
+
+    total_dist = 0
+    for agent in agents:
+        distances = np.sqrt(np.square(agent - landmarks).sum(axis=1))
+        total_dist += distances.min()
+
+    return total_dist

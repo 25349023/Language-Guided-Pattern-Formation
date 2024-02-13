@@ -19,25 +19,32 @@ def temp_seed(seed):
         np.random.set_state(state)
 
 
+def reset_evaluation():
+    best_eval_reward = -100000000
+    plot = {'good_rewards': [], 'adversary_rewards': [], 'rewards': [], 'steps': [], 'q_loss': [],
+            'gcn_q_loss': [], 'p_loss': [], 'final': [], 'abs': []}
+    return best_eval_reward, plot
+
+
 def eval_model_q(test_q, done_training, args, save=True, metric_q=None):
     eval_env = make_env(args.scenario, args, benchmark=True)
+    best_eval_reward, plot = reset_evaluation()
 
     while True:
         if not test_q.empty():
             print('=================== start eval ===================')
-            plot = {'good_rewards': [], 'adversary_rewards': [], 'rewards': [], 'steps': [], 'q_loss': [],
-                    'gcn_q_loss': [], 'p_loss': [], 'final': [], 'abs': []}
-            best_eval_reward = -100000000
 
             eval_env.seed(args.seed + 10)
             eval_rewards = []
             comp_rates = []
+            collisions = []
             agent, tr_log, ret_metric = test_q.get()
             with temp_seed(args.seed):
                 for n_eval in range(args.num_eval_runs):
                     obs_n = eval_env.reset()
                     episode_reward = 0
                     episode_step = 0
+                    episode_collisions = 0
                     while True:
                         action_n = agent.select_action(torch.Tensor(obs_n), action_noise=True,
                                                        param_noise=False).squeeze().cpu().numpy()
@@ -47,15 +54,17 @@ def eval_model_q(test_q, done_training, args, save=True, metric_q=None):
                         terminal = (episode_step >= args.num_steps)
                         episode_reward += np.sum(reward_n)
                         obs_n = next_obs_n
+                        episode_collisions += sum(info_n) // 2
 
                         time.sleep(0.02)
                         eval_env.render()
 
                         if done_n[0] or terminal:
                             eval_rewards.append(episode_reward)
-                            if n_eval % 100 == 0:
-                                print('test reward', episode_reward)
+                            if n_eval % 10 == 0:
+                                print(f'test reward: {episode_reward}, total collision: {episode_collisions}')
                             comp_rates.append(completion_rate(eval_env))
+                            collisions.append(episode_collisions)
                             break
 
             mean_reward = np.mean(eval_rewards)
@@ -77,13 +86,14 @@ def eval_model_q(test_q, done_training, args, save=True, metric_q=None):
             # plot['abs'].append(best_eval_reward)
             dict2csv(plot, os.path.join(tr_log['exp_save_dir'], 'train_curve.csv'))
 
-            metric_record = MetricRecord(mean_reward, np.mean(comp_rates), 0)
-
             if ret_metric:
+                metric_record = MetricRecord(mean_reward, np.mean(comp_rates), np.mean(collisions))
                 metric_q.put(metric_record)
+                best_eval_reward, plot = reset_evaluation()
 
             if save:
                 torch.save({'agents': agent}, os.path.join(tr_log['exp_save_dir'], 'agents.ckpt'))
+
         if done_training.value and test_q.empty():
             break
 

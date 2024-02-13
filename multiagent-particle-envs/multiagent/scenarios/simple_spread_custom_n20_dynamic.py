@@ -1,19 +1,18 @@
 import ast
-import operator
 import pprint
-
-import numpy as np
 import random
 import re
-from multiagent.core_vec import World, Agent, Landmark
-from multiagent.scenario import BaseScenario
+
+import numpy as np
 from bridson import poisson_disc_samples
 
-# lm_pattern = re.compile(r'''\[(\(('.*?'|".*?"),\s*\[\d*,\s*\d*,\s*\d*,\s*\d*\]\)(,\s*)?)+\]''')
+from multiagent.core_vec import World, Agent, Landmark
+from multiagent.scenario import BaseScenario, CollisionBenchmarkMixin
+
 lm_pattern = re.compile(r'''\[(\[\d*,\s*\d*\](,\s*)?)+\]''')
 
 
-class Scenario(BaseScenario):
+class Scenario(BaseScenario, CollisionBenchmarkMixin):
     def make_world(self, sort_obs=True, use_numba=False):
         world = World(use_numba)
         # self.world = world
@@ -118,30 +117,6 @@ class Scenario(BaseScenario):
         world.agents = world.agents[:new_num]
         self.landmarks_warehouse.extend(world.landmarks[new_num:])
         world.landmarks = world.landmarks[:new_num]
-
-    def benchmark_data(self, agent, world):
-        rew = 0
-        collisions = 0
-        occupied_landmarks = 0
-        min_dists = 0
-        for l in world.landmarks:
-            dists = [np.sqrt(np.sum(np.square(a.state.p_pos - l.state.p_pos))) for a in world.agents]
-            min_dists += min(dists)
-            rew -= min(dists)
-            if min(dists) < 0.1:
-                occupied_landmarks += 1
-        if agent.collide:
-            for a in world.agents:
-                if self.is_collision(a, agent):
-                    rew -= 1
-                    collisions += 1
-        return (rew, collisions, min_dists, occupied_landmarks)
-
-    def is_collision(self, agent1, agent2):
-        delta_pos = agent1.state.p_pos - agent2.state.p_pos
-        dist = np.sqrt(np.sum(np.square(delta_pos)))
-        dist_min = agent1.size + agent2.size
-        return True if dist < dist_min else False
 
     def reward(self, agent, world):
         """

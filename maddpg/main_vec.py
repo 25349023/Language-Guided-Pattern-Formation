@@ -115,8 +115,7 @@ def run_experiment(exp_name, args, test_q, metric_q):
                         batch = Transition(*zip(*transitions))
                         policy_loss = agent.update_actor_parameters(batch, i, args.shuffle)
                         updates += 1
-                    print('episode {}, p loss {}, p_lr {}'.
-                          format(i_episode, policy_loss, agent.actor_lr))
+                    # print(f'episode {i_episode}, p loss {policy_loss}, p_lr {agent.actor_lr}')
 
                 if total_numsteps % args.steps_per_critic_update == 0:
                     value_losses = []
@@ -126,13 +125,14 @@ def run_experiment(exp_name, args, test_q, metric_q):
                         value_losses.append(agent.update_critic_parameters(batch, i, args.shuffle))
                         updates += 1
                     value_loss = torch.tensor(value_losses).mean().item()
-                    print('episode {}, q loss {},  q_lr {}'.
-                          format(i_episode, value_loss, agent.critic_optim.param_groups[0]['lr']))
+                    # print(f'episode {i_episode}, q loss {value_loss}, '
+                    #       f'q_lr {agent.critic_optim.param_groups[0]["lr"]}')
                     if args.target_update_mode == 'episodic':
                         hard_update(agent.critic_target, agent.critic)
 
             if done_n[0] or terminal:
-                print('train epidoe reward', episode_reward)
+                if (i_episode + 1) % args.eval_freq == 0:
+                    print('train epidoe reward', episode_reward)
                 break
 
         if not args.fixed_lr:
@@ -147,7 +147,6 @@ def run_experiment(exp_name, args, test_q, metric_q):
     evaluate_signal(True)
     eval_metrics = metric_q.get()
 
-    # TODO: record different metrics and return
     return eval_metrics
 
 

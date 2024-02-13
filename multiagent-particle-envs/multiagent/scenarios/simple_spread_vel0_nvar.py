@@ -1,10 +1,13 @@
-import numpy as np
 import random
-from multiagent.core_vec import World, Agent, Landmark
-from multiagent.scenario import BaseScenario
+
+import numpy as np
 from bridson import poisson_disc_samples
 
-class Scenario(BaseScenario):
+from multiagent.core_vec import World, Agent, Landmark
+from multiagent.scenario import BaseScenario, CollisionBenchmarkMixin
+
+
+class Scenario(BaseScenario, CollisionBenchmarkMixin):
     def make_world(self, sort_obs=True, use_numba=False, args=None):
         world = World(use_numba)
         self.np_rnd = np.random.RandomState(0)
@@ -65,32 +68,6 @@ class Scenario(BaseScenario):
             landmark.state.p_pos = l_locations[i, :]
             landmark.state.p_vel = np.zeros(world.dim_p)
         self.collide_th = 2 * world.agents[0].size
-
-
-    def benchmark_data(self, agent, world):
-        rew = 0
-        collisions = 0
-        occupied_landmarks = 0
-        min_dists = 0
-        for l in world.landmarks:
-            dists = [np.sqrt(np.sum(np.square(a.state.p_pos - l.state.p_pos))) for a in world.agents]
-            min_dists += min(dists)
-            rew -= min(dists)
-            if min(dists) < 0.1:
-                occupied_landmarks += 1
-        if agent.collide:
-            for a in world.agents:
-                if self.is_collision(a, agent):
-                    rew -= 1
-                    collisions += 1
-        return (rew, collisions, min_dists, occupied_landmarks)
-
-
-    def is_collision(self, agent1, agent2):
-        delta_pos = agent1.state.p_pos - agent2.state.p_pos
-        dist = np.sqrt(np.sum(np.square(delta_pos)))
-        dist_min = agent1.size + agent2.size
-        return True if dist < dist_min else False
 
     def reward(self, agent, world):
         """
@@ -154,7 +131,7 @@ class Scenario(BaseScenario):
         other_dist = np.sqrt(np.sum(np.square(np.array(other_pos) - agent.state.p_pos), axis=1))
         dist_idx = np.argsort(other_dist)
         other_pos = [other_pos[i] for i in dist_idx[:self.n_others]]
-        #other_pos = sorted(other_pos, key=lambda k: [k[0], k[1]])
+        # other_pos = sorted(other_pos, key=lambda k: [k[0], k[1]])
         obs = np.concatenate([np.zeros_like(agent.state.p_vel)] + [agent.state.p_pos] + entity_pos + other_pos)
         return obs
 

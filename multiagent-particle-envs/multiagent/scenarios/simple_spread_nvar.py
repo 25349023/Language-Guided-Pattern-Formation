@@ -1,23 +1,30 @@
-import numpy as np
 import random
-from multiagent.core_vec import World, Agent, Landmark
-from multiagent.scenario import BaseScenario
+
+import numpy as np
 from bridson import poisson_disc_samples
 
-class Scenario(BaseScenario):
-    def make_world(self, sort_obs=True, use_numba=False):
+from multiagent.core_vec import World, Agent, Landmark
+from multiagent.scenario import BaseScenario, CollisionBenchmarkMixin
+
+
+class Scenario(BaseScenario, CollisionBenchmarkMixin):
+    def make_world(self, sort_obs=True, use_numba=False, args=None):
         world = World(use_numba)
         self.np_rnd = np.random.RandomState(0)
         self.random = random.Random()
         self.sort_obs = sort_obs
         # set any world properties first
         world.dim_c = 2
-        num_agents = 20
-        num_landmarks = 20
+        if args is not None:
+            num_agents = args.num_agents
+            num_landmarks = args.num_agents
+        else:
+            num_agents = 10
+            num_landmarks = 10
         world.collaborative = True
         self.agent_size = 0.15
-        self.world_radius = 3.0
-        self.n_others = 10
+        self.world_radius = 3
+        self.n_others = 5
         # add agents
         world.agents = [Agent() for i in range(num_agents)]
         for i, agent in enumerate(world.agents):
@@ -43,7 +50,7 @@ class Scenario(BaseScenario):
         while len(self.l_locations) < len(world.landmarks):
             self.l_locations = poisson_disc_samples(width=self.world_radius * 2, height=self.world_radius * 2,
                                                     r=self.agent_size * 4.5)
-            print('regenerate l location')
+            # print('regenerate l location')
 
         # random properties for agents
         for i, agent in enumerate(world.agents):
@@ -61,32 +68,6 @@ class Scenario(BaseScenario):
             landmark.state.p_pos = l_locations[i, :]
             landmark.state.p_vel = np.zeros(world.dim_p)
         self.collide_th = 2 * world.agents[0].size
-
-
-    def benchmark_data(self, agent, world):
-        rew = 0
-        collisions = 0
-        occupied_landmarks = 0
-        min_dists = 0
-        for l in world.landmarks:
-            dists = [np.sqrt(np.sum(np.square(a.state.p_pos - l.state.p_pos))) for a in world.agents]
-            min_dists += min(dists)
-            rew -= min(dists)
-            if min(dists) < 0.1:
-                occupied_landmarks += 1
-        if agent.collide:
-            for a in world.agents:
-                if self.is_collision(a, agent):
-                    rew -= 1
-                    collisions += 1
-        return (rew, collisions, min_dists, occupied_landmarks)
-
-
-    def is_collision(self, agent1, agent2):
-        delta_pos = agent1.state.p_pos - agent2.state.p_pos
-        dist = np.sqrt(np.sum(np.square(delta_pos)))
-        dist_min = agent1.size + agent2.size
-        return True if dist < dist_min else False
 
     def reward(self, agent, world):
         """
@@ -150,8 +131,8 @@ class Scenario(BaseScenario):
         other_dist = np.sqrt(np.sum(np.square(np.array(other_pos) - agent.state.p_pos), axis=1))
         dist_idx = np.argsort(other_dist)
         other_pos = [other_pos[i] for i in dist_idx[:self.n_others]]
-        #other_pos = sorted(other_pos, key=lambda k: [k[0], k[1]])
-        obs = np.concatenate([np.zeros_like(agent.state.p_vel)] + [agent.state.p_pos] + entity_pos + other_pos)
+        # other_pos = sorted(other_pos, key=lambda k: [k[0], k[1]])
+        obs = np.concatenate([agent.state.p_vel] + [agent.state.p_pos] + entity_pos + other_pos)
         return obs
 
     def seed(self, seed=None):

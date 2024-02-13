@@ -13,7 +13,7 @@ lm_pattern = re.compile(r'''\[(\[\d*,\s*\d*\](,\s*)?)+\]''')
 
 
 class Scenario(BaseScenario, CollisionBenchmarkMixin):
-    def make_world(self, sort_obs=True, use_numba=False):
+    def make_world(self, sort_obs=True, use_numba=False, args=None):
         world = World(use_numba)
         # self.world = world
         self.np_rnd = np.random.RandomState(0)
@@ -21,12 +21,16 @@ class Scenario(BaseScenario, CollisionBenchmarkMixin):
         self.sort_obs = sort_obs
         # set any world properties first
         world.dim_c = 2
+
+        assert args is not None
         num_agents = 20
         num_landmarks = 20
+        self.retain_pos = args.retain_pos
         world.collaborative = True
         self.agent_size = 0.15
         self.world_radius = 3.0
         self.n_others = 5
+
         # add agents
         world.agents = [Agent() for i in range(num_agents)]
         for i, agent in enumerate(world.agents):
@@ -97,7 +101,8 @@ class Scenario(BaseScenario, CollisionBenchmarkMixin):
             landmark.color = np.array([0.25, 0.25, 0.25])
         # set random initial states
         for agent in world.agents:
-            agent.state.p_pos = self.np_rnd.uniform(-self.world_radius, +self.world_radius, world.dim_p)
+            if from_make or not self.retain_pos:
+                agent.state.p_pos = self.np_rnd.uniform(-self.world_radius, +self.world_radius, world.dim_p)
             agent.state.p_vel = np.zeros(world.dim_p)
             agent.state.c = np.zeros(world.dim_c)
         l_locations = np.array(self.random.sample(self.l_locations, len(world.landmarks))) - self.world_radius

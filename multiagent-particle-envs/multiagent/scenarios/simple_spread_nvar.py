@@ -15,16 +15,16 @@ class Scenario(BaseScenario, CollisionBenchmarkMixin):
         self.sort_obs = sort_obs
         # set any world properties first
         world.dim_c = 2
-        if args is not None:
-            num_agents = args.num_agents
-            num_landmarks = args.num_agents
-        else:
-            num_agents = 10
-            num_landmarks = 10
+
+        assert args is not None
+        num_agents = args.num_agents
+        num_landmarks = args.num_agents
+        self.retain_pos = args.retain_pos
         world.collaborative = True
         self.agent_size = 0.15
         self.world_radius = 3
         self.n_others = 5
+
         # add agents
         world.agents = [Agent() for i in range(num_agents)]
         for i, agent in enumerate(world.agents):
@@ -40,11 +40,11 @@ class Scenario(BaseScenario, CollisionBenchmarkMixin):
             landmark.movable = False
 
         # make initial conditions
-        self.reset_world(world)
+        self.reset_world(world, True)
 
         return world
 
-    def reset_world(self, world):
+    def reset_world(self, world, from_make=False):
         self.l_locations = poisson_disc_samples(width=self.world_radius * 2, height=self.world_radius * 2,
                                                 r=self.agent_size * 4.5)
         while len(self.l_locations) < len(world.landmarks):
@@ -60,7 +60,8 @@ class Scenario(BaseScenario, CollisionBenchmarkMixin):
             landmark.color = np.array([0.25, 0.25, 0.25])
         # set random initial states
         for agent in world.agents:
-            agent.state.p_pos = self.np_rnd.uniform(-self.world_radius, +self.world_radius, world.dim_p)
+            if from_make or not self.retain_pos:
+                agent.state.p_pos = self.np_rnd.uniform(-self.world_radius, +self.world_radius, world.dim_p)
             agent.state.p_vel = np.zeros(world.dim_p)
             agent.state.c = np.zeros(world.dim_c)
         l_locations = np.array(self.random.sample(self.l_locations, len(world.landmarks))) - self.world_radius

@@ -12,7 +12,7 @@ def adjust_learning_rate(optimizer, steps, max_steps, start_decrease_step, init_
 
 
 def dict2csv(output_dict, f_name):
-    with open(f_name, mode='w') as f:
+    with open(f_name, mode='w', newline='') as f:
         writer = csv.writer(f, delimiter=",")
         for k, v in output_dict.items():
             v = [k] + v
@@ -170,4 +170,6 @@ def get_args():
     parser.add_argument("--activation", type=str, default='relu', help='relu|leaky_relu')
     parser.add_argument("--shape", type=str, default='circle', help='circle|rect|triangle|pyramid')
     parser.add_argument("--force", action="store_true", default=False, help='overwrite the previous ckpt')
+    parser.add_argument("--retain_pos", action="store_true", default=False,
+                        help="retain agents' positions between episodes")
     return parser.parse_args()

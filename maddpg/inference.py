@@ -1,12 +1,23 @@
+import dataclasses
+import glob
 import os
+import pprint
 import random
-import time
 
 import numpy as np
 import torch
 
+import metrics
 from eval_seq import eval_model_seq
 from utils import get_args
+
+
+def load_model(ckpt_dir, exp_name, dev_str):
+    device = torch.device(dev_str)
+    agent_path = os.path.join(ckpt_dir, exp_name, 'agents_best.ckpt')
+    eval_agent = torch.load(agent_path, map_location=device)['agents']
+    eval_agent.device = dev_str
+    return eval_agent
 
 
 def main():
@@ -23,27 +34,28 @@ def main():
     torch.set_num_threads(1)
 
     dev_str = "cuda:0" if torch.cuda.is_available() and args.cuda else "cpu"
-    device = torch.device(dev_str)
 
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    total_numsteps = 0
-    exp_save_dir = os.path.join(args.save_dir, args.exp_name)
-    os.makedirs(exp_save_dir, exist_ok=True)
-    start_time = time.time()
-    eval_agent = torch.load(os.path.join(exp_save_dir, 'agents_best.ckpt'), map_location=device)['agents']
-    eval_agent.device = dev_str
-    print(f'device: {eval_agent.device}')
+    if args.num_seeds == -1:
+        metric_results = []
+        for dirname in glob.iglob(os.path.join(args.save_dir, f'{args.exp_name}_seed*')):
+            try:
+                eval_agent = load_model(args.save_dir, os.path.basename(dirname), dev_str)
+            except FileNotFoundError:
+                continue
+            print(f'Running Evaluation for {os.path.basename(dirname)}')
+            metric_results.append(eval_model_seq(args, eval_agent))
+    else:
+        eval_agent = load_model(args.save_dir, args.exp_name, dev_str)
+        metric_results = [eval_model_seq(args, eval_agent)]
 
-    tr_log = {'num_adversary': 0,
-              'best_good_eval_reward': 0,
-              'best_adversary_eval_reward': 0,
-              'exp_save_dir': exp_save_dir, 'total_numsteps': total_numsteps,
-              'value_loss': 0, 'policy_loss': 0,
-              'i_episode': 0, 'start_time': start_time}
-    eval_model_seq(args, eval_agent, tr_log, False)
+    pprint.pprint(metric_results)
+    print()
+    for field in dataclasses.fields(metrics.MetricRecord):
+        print(f'Avg {field.name}: {np.mean([getattr(m, field.name) for m in metric_results])}')
 
 
 if __name__ == '__main__':

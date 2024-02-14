@@ -21,8 +21,8 @@ class Scenario(BaseScenario, CollisionBenchmarkMixin):
         num_landmarks = args.num_agents
         self.retain_pos = args.retain_pos
         world.collaborative = True
-        self.agent_size = 0.15
-        self.world_radius = 3.0
+        self.agent_size = args.agent_rad
+        self.world_radius = args.world_rad
         self.n_others = 5
 
         # add agents

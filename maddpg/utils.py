@@ -166,6 +166,8 @@ def get_args():
     parser.add_argument('--eval_freq', type=int, default=1000)
     parser.add_argument("--display", action="store_true", default=False)
     parser.add_argument("--num_agents", type=int, default=10)
+    parser.add_argument("--agent_rad", type=float, default=0.15)
+    parser.add_argument("--world_rad", type=float, default=3.0)
     parser.add_argument("--num_seeds", type=int, default=1)
     parser.add_argument("--activation", type=str, default='relu', help='relu|leaky_relu')
     parser.add_argument("--shape", type=str, default='circle', help='circle|rect|triangle|pyramid')

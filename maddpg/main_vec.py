@@ -90,6 +90,7 @@ def run_experiment(exp_name, args, test_q, metric_q):
         episode_step = 0
         agents_rew = [[] for _ in range(n_agents)]
         while True:
+            obs_n = np.asarray(obs_n)
             action_n = agent.select_action(torch.Tensor(obs_n).to(device), action_noise=True,
                                            param_noise=False).squeeze().cpu().numpy()
             next_obs_n, reward_n, done_n, info = env.step(action_n)
@@ -177,7 +178,7 @@ if __name__ == '__main__':
         os.makedirs(exp_root, exist_ok=args.force)
 
         for i in range(args.num_seeds):
-            args.seed = random.randrange(1000000)
+            args.seed = random.randrange(10000)
             exp_name = os.path.join(args.exp_name, f'seed{args.seed}')
             metric_results.append(run_experiment(exp_name, args, test_q, metric_q))
     else:

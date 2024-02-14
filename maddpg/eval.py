@@ -48,6 +48,7 @@ def eval_model_q(test_q, done_training, args, save=True, metric_q=None):
                     episode_collisions = 0
 
                     while True:
+                        obs_n = np.asarray(obs_n)
                         action_n = agent.select_action(torch.Tensor(obs_n), action_noise=True,
                                                        param_noise=False).squeeze().cpu().numpy()
                         next_obs_n, reward_n, done_n, info_n = eval_env.step(action_n)

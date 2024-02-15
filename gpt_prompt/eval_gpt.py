@@ -14,7 +14,7 @@ template = 'Some black boxes arranged in the shape of {}'
 NEG_SAMPLES = [
     'random', 'circle', 'square', 'triangle', 'hexagon', 'star', 'Trapezium', 'diamond', 'kite',
     *[f'capital letter {chr(i)}' for i in range(ord('A'), ord('Z') + 1)],
-    'right triangle', 'pyramid', 'cross', 'drop'
+    'right triangle', 'pyramid', 'cross', 'drop', 'grid', 'rhombus'
 ]
 
 
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     pathlib.Path('gpt_eval').mkdir(exist_ok=True)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    clip_args = clip.load("ViT-L/14@336px", device=device)
+    clip_args = clip.load("ViT-L/14", device=device)
 
     num = 0
     while True:

@@ -65,7 +65,8 @@ def eval_model_q(test_q, done_training, args, save=True, metric_q=None):
                         if done_n[0] or terminal:
                             eval_rewards.append(episode_reward)
                             if n_eval % 10 == 0:
-                                print(f'test reward: {episode_reward}, total collision: {episode_collisions}')
+                                print(f'test reward: {episode_reward}, total collision: {episode_collisions}'
+                                      f'completion rate: {episode_collisions}')
                             comp_rates.append(completion_rate(eval_env))
                             collisions.append(episode_collisions)
                             avg_distance.append(distance_to_landmark(eval_env))

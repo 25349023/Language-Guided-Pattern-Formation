@@ -170,7 +170,8 @@ def get_args():
     parser.add_argument("--world_rad", type=float, default=3.0)
     parser.add_argument("--num_seeds", type=int, default=1)
     parser.add_argument("--activation", type=str, default='relu', help='relu|leaky_relu')
-    parser.add_argument("--shape", type=str, default='circle', help='circle|rect|triangle|pyramid')
+    parser.add_argument("--shape", type=str, default='circle',
+                        help='refer to real_deploy/tools.py for avalible shapes')
     parser.add_argument("--force", action="store_true", default=False, help='overwrite the previous ckpt')
     parser.add_argument("--retain_pos", action="store_true", default=False,
                         help="retain agents' positions between episodes")

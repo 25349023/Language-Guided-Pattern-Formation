@@ -29,7 +29,6 @@ def main():
     torch.manual_seed(args.seed)
 
     exp_save_dir = os.path.join(args.save_dir, args.exp_name)
-    os.makedirs(exp_save_dir, exist_ok=True)
     eval_agent = torch.load(os.path.join(exp_save_dir, 'agents_best.ckpt'), map_location=device)['agents']
     eval_agent.device = dev_str
     print(f'device: {eval_agent.device}')

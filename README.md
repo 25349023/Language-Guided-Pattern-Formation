@@ -28,7 +28,7 @@
 
 - `<ckpt_dir>` should be `exp_ckpt` if you are using the checkpoints provided by this repo
 - `<exp_name>` can be `coop_navigation_dire_n10`, `coop_navigation_vel0_n10`
-- `<shape>` can be `circle`, `rect`, `triangle`, or `pyramid`
+- The available options for `<shape>` can be found in `maddpg/real_deploy/tools.py`
 
 The differences between these setups are: (see TODO 2-2 in eval_real.py)
 - `coop_navigation_dire_n10` use the `get_direction(curr_agent.velocity)` to compute the first two element of the observation

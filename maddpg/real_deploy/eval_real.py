@@ -26,6 +26,33 @@ def get_agents(robot_id_list, robot_pos_dict, pos_prev_dict):
         agents.append(Agent(current_pos, current_pos - prev_pos, robot_id))
     return agents
 
+def is_goal_close_to_landmarks(goal, landmarks, threshold=25.0):
+    for landmark in landmarks:
+        distance = np.sqrt((goal[0] - landmark[0])**2 + (goal[1] - landmark[1])**2)
+        if distance <= threshold:
+            print(f'distance: {distance}')
+            return True
+    return False
+
+def get_robot_state(robot_id_list, driver1, driver2):
+    # receive the position of the robots
+    robot_pos_dict = {}
+    robot_degree_dict = {}
+    while True:
+        # Get the initial position of the robots from both drivers
+        robot_degree_driver1, robot_pos_driver1 = driver1.get_id_position()
+        robot_degree_driver2, robot_pos_driver2 = driver2.get_id_position()
+        # Update the robot_pos_dict with the new positions
+        robot_pos_dict.update(robot_pos_driver1)
+        robot_pos_dict.update(robot_pos_driver2)
+        robot_degree_dict.update(robot_degree_driver1)
+        robot_degree_dict.update(robot_degree_driver2)
+        # Check if we have received positions for all robot IDs
+        if all(robot_id in robot_pos_dict for robot_id in robot_id_list):
+            print("Received positions for all robots. Moving to the next part of the code.")
+            break
+    return robot_degree_dict, robot_pos_dict
+
 @contextlib.contextmanager
 def temp_seed(seed):
     state = np.random.get_state()
@@ -114,7 +141,7 @@ def eval_model_real(args, policy, update_interval=1):
 
         # set robot id
         # robot_id_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        robot_id_list = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        robot_id_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         pos_prev_dict = {i: None for i in robot_id_list}
 
         # open port
@@ -122,6 +149,10 @@ def eval_model_real(args, policy, update_interval=1):
         driver2 = osx001Driver('COM4')
         driver1.flush_buffer()
         driver2.flush_buffer()
+        
+        # driver2.writeMotorSpeed(15, 80, 80)
+        # import pdb;pdb.set_trace()
+        
 
         # set parameter
         delta_end = 1
@@ -132,10 +163,10 @@ def eval_model_real(args, policy, update_interval=1):
                 driver2.set_parameter(robot_id, delta_end=delta_end)
 
         n_agents = args.num_agents  # default is 10 agents
-        landmarks = get_landmarks(n_agents)
+        landmarks = get_landmarks(n_agents, args.shape)
         
         # visualize the landmarks
-        transferred_positions = np.array([sim2real_coord(x, y) for x, y in landmarks])
+        real_landmarks = np.array([sim2real_coord(x, y) for x, y in landmarks])
         # Plotting
         plt.figure(figsize=(12, 6))
         # Plot for landmarks
@@ -150,9 +181,9 @@ def eval_model_real(args, policy, update_interval=1):
         plt.ylabel('y')
         # Plot for transferred positions
         plt.subplot(1, 2, 2)
-        plt.scatter(transferred_positions[:, 0], transferred_positions[:, 1], color='red', label='Transferred Positions')
+        plt.scatter(real_landmarks[:, 0], real_landmarks[:, 1], color='red', label='Transferred Positions')
         for i, robot_id in enumerate(robot_id_list):
-            plt.annotate(str(robot_id), (transferred_positions[i, 0], transferred_positions[i, 1]))
+            plt.annotate(str(robot_id), (real_landmarks[i, 0], real_landmarks[i, 1]))
         plt.xlim(-255, 255)
         plt.ylim(-255, 255)
         plt.title('Transferred Positions')
@@ -169,18 +200,7 @@ def eval_model_real(args, policy, update_interval=1):
                 episode_step = 0
                 while True:
                     # receive the position of the robots
-                    robot_pos_dict = {}
-                    while True:
-                        # Get the initial position of the robots from both drivers
-                        robot_pos_driver1 = driver1.get_id_position()
-                        robot_pos_driver2 = driver2.get_id_position()
-                        # Update the robot_pos_dict with the new positions
-                        robot_pos_dict.update(robot_pos_driver1)
-                        robot_pos_dict.update(robot_pos_driver2)
-                        # Check if we have received positions for all robot IDs
-                        if all(robot_id in robot_pos_dict for robot_id in robot_id_list):
-                            print("Received positions for all robots. Moving to the next part of the code.")
-                            break
+                    robot_degree_dict, robot_pos_dict = get_robot_state(robot_id_list, driver1, driver2)
 
                     # set previous position to the initial position
                     # agents = get_agents(robot_id_list, robot_pos_dict, robot_pos_dict)
@@ -198,34 +218,16 @@ def eval_model_real(args, policy, update_interval=1):
                     goal_pos = []
                     for agent, act in zip(agents, action_n):
                         idle, right, left, up, down = act
-                        dx = (right - left) * 0.015
-                        dy = (up - down) * 0.015
-                        print(f'Robot {agent.robot_id} - dx: {dx}, dy: {dy}')
-                        print(f'Robot {agent.robot_id} - x: {agent.position[0]}, y: {agent.position[1]}')
-                        goal = (agent.position[0] + dx, agent.position[1] + dy)
-                        goal_pos.append(sim2real_coord(*goal))
+                        dx = (right - left) * 0.05
+                        dy = (up - down) * 0.05
+                        delta = sim2real_coord(*(dx, dy))
+                        delta_clipped = tuple(max(min(d, 1.5), -1.5) for d in delta)
+                        current_pos = sim2real_coord(*agent.position)
+                        print(f'Robot {agent.robot_id} - delta: {delta}')
+                        print(f'Robot {agent.robot_id} - delta_clipped: {delta_clipped}')
+                        print(f'Robot {agent.robot_id} - current_pos: {current_pos}')
+                        goal_pos.append(tuple(c + d for c, d in zip(current_pos, delta_clipped)))
 
-                    if episode_step % update_interval == 0:
-                        for robot_id, goal in zip(robot_id_list, goal_pos):
-                            if robot_id <= 9:
-                                # driver1.resetIMU(robot_id)
-                                driver1.setTargetPosition(robot_id, int(goal[0]), int(goal[1]))
-                            else:
-                                # driver2.resetIMU(robot_id)
-                                driver2.setTargetPosition(robot_id, int(goal[0]), int(goal[1]))
-                        move_start_time = time.time()
-                        while(True):
-                            driver1.checkStatusPacket()
-                            driver2.checkStatusPacket()
-                            if time.time() - move_start_time > 0.08:
-                                driver1.flush_buffer()
-                                driver2.flush_buffer()
-                                break
-                    
-                    # update robot prev position
-                    for robot_id in robot_id_list:
-                        pos_prev_dict[robot_id] = robot_pos_dict[robot_id]
-                    
                     # visualize goal pos
                     x_coords, y_coords = zip(*goal_pos)
                     plt.figure(figsize=(10, 6))
@@ -240,10 +242,32 @@ def eval_model_real(args, policy, update_interval=1):
                     plt.grid(True)
                     plt.savefig(f'{save_goal_dir}/goal_positions_{episode_step}.png')
 
+                    if episode_step % update_interval == 0:
+                        for robot_id, goal in zip(robot_id_list, goal_pos):
+                            if not is_goal_close_to_landmarks(goal, real_landmarks):
+                                if robot_id <= 9:
+                                    # driver1.resetIMU(robot_id)
+                                    driver1.setTargetPosition(robot_id, int(goal[0]), int(goal[1]))
+                                else:
+                                    # driver2.resetIMU(robot_id)
+                                    driver2.setTargetPosition(robot_id, int(goal[0]), int(goal[1]))
+                        move_start_time = time.time()
+                        while(True):
+                            driver1.checkStatusPacket()
+                            driver2.checkStatusPacket()
+                            if time.time() - move_start_time > 0.1:
+                                driver1.flush_buffer()
+                                driver2.flush_buffer()
+                                break
+                    
+                    # update robot prev position
+                    for robot_id in robot_id_list:
+                        pos_prev_dict[robot_id] = robot_pos_dict[robot_id]
+
                     episode_step += 1
                     terminal = (episode_step >= args.num_steps)
 
-                    time.sleep(0.1)
+                    # time.sleep(0.3)
 
                     if terminal:
                         break

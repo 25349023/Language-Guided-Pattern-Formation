@@ -15,18 +15,20 @@
 ### Install other required packages
     pip install -r requirements.txt
 
-## Training
+## Model Evaluation
 
 ### Simulation
     cd maddpg
-    python inference.py --exp_name coop_navigation_n20 --scenario simple_spread_custom_n20 --critic_type gcn_max --cuda --num_steps 100
+    python inference.py --save_dir <ckpt_dir> --exp_name coop_navigation_n20 --scenario simple_spread_custom_n20 --critic_type gcn_max --cuda --num_steps 100
 
 ### Real robots
     cd maddpg
     export PYTHONPATH=<path to maddpg directory>
-    python real_deploy/inference_real.py --exp_name <exp_name> --scenario test --critic_type gcn_max --cuda --num_steps 100 --num_agents 10
+    python real_deploy/inference_real.py --save_dir <ckpt_dir> --exp_name <exp_name> --scenario test --critic_type gcn_max --cuda --num_steps 100 --num_agents 10 --shape <shape>
 
-, where exp_name can be `coop_navigation_dire_n10`, `coop_navigation_vel0_n10`
+- `<ckpt_dir>` should be `exp_ckpt` if you are using the checkpoints provided by this repo
+- `<exp_name>` can be `coop_navigation_dire_n10`, `coop_navigation_vel0_n10`
+- `<shape>` can be `circle`, `rect`, `triangle`, or `pyramid`
 
 The differences between these setups are: (see TODO 2-2 in eval_real.py)
 - `coop_navigation_dire_n10` use the `get_direction(curr_agent.velocity)` to compute the first two element of the observation

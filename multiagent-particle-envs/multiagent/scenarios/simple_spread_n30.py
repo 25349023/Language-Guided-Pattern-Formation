@@ -15,9 +15,9 @@ class Scenario(BaseScenario):
         num_agents = 30
         num_landmarks = 30
         world.collaborative = True
-        self.agent_size = 0.15
-        self.world_radius = 3
-        self.n_others = 5
+        self.agent_size = 0.1
+        self.world_radius = 5
+        self.n_others = 10
         # add agents
         world.agents = [Agent() for i in range(num_agents)]
         for i, agent in enumerate(world.agents):

@@ -203,7 +203,7 @@ class   osx001Driver():
                     if roll > 32768:
                         roll = roll - 65536
 
-                    # print({'id':id, 'x':x_position, 'y':y_position, 'deg' : degree, 'v' : voltage, 'yaw' : yaw, 'pitch' : pitch, 'roll' : roll})
+                    print({'id':id, 'x':x_position, 'y':y_position, 'deg' : degree, 'v' : voltage, 'yaw' : yaw, 'pitch' : pitch, 'roll' : roll})
 
                 elif self.commandInstruction == 0x28:
                     ids = []
@@ -214,7 +214,8 @@ class   osx001Driver():
     
     def get_id_position(self):
         rcvArray = self.port.read_all()
-        data_dict = {}
+        robot_position = {}
+        robot_degree = {}
         for data in rcvArray:
             # データを保存
             if self.commandState == 0:
@@ -288,12 +289,13 @@ class   osx001Driver():
                         roll = roll - 65536
 
                     # print({'id':id, 'x':x_position, 'y':y_position, 'deg' : degree, 'v' : voltage, 'yaw' : yaw, 'pitch' : pitch, 'roll' : roll})
-                    data_dict[id] = [x_position, y_position]
+                    robot_position[id] = [x_position, y_position]
+                    robot_degree[id] = degree
                 elif self.commandInstruction == 0x28:
                     ids = []
                     for i in range(0, self.commandLength - 2):
                         ids.append(self.commandData[5 + i])
 
                     print(ids)
-        return data_dict
+        return robot_degree, robot_position
 

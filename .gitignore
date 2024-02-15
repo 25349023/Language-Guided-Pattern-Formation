@@ -1,7 +1,7 @@
 venv/
 .idea/
 __pycache__/
-data/
-*.png
 
 test_input.txt
+test_obs/
+data/

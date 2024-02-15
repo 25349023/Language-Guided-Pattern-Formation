@@ -15,7 +15,7 @@ class Scenario(BaseScenario):
         num_agents = 10
         num_landmarks = 10
         world.collaborative = True
-        self.agent_size = 0.15
+        self.agent_size = 0.1
         self.world_radius = 3.0
         self.n_others = 5
         # add agents

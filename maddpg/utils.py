@@ -133,7 +133,7 @@ def get_args():
     parser.add_argument('--num_episodes', type=int, default=60000, metavar='N',
                         help='number of episodes (default: 1000)')
     parser.add_argument('--hidden_size', type=int, default=128, metavar='N',
-                        help='number of episodes (default: 128)')
+                        help='hidden size (default: 128)')
     parser.add_argument('--updates_per_step', type=int, default=8, metavar='N',
                         help='model updates per simulator step (default: 5)')
     parser.add_argument('--critic_updates_per_step', type=int, default=8, metavar='N',
@@ -153,7 +153,6 @@ def get_args():
     parser.add_argument('--critic_type', type=str, default='mlp', help="Supports [mlp, gcn_mean, gcn_max]")
     parser.add_argument('--actor_type', type=str, default='mlp', help="Supports [mlp, gcn_max]")
     parser.add_argument('--critic_dec_cen', default='cen')
-    parser.add_argument("--env_agent_ckpt", type=str, default='ckpt_plot/simple_tag_v5_al0a10_4/agents.ckpt')
     parser.add_argument('--shuffle', default=None, type=str, help='None|shuffle|sort')
     parser.add_argument('--episode_per_update', type=int, default=4, metavar='N',
                         help='max episode length (default: 1000)')
@@ -167,4 +166,8 @@ def get_args():
     parser.add_argument('--eval_freq', type=int, default=1000)
     parser.add_argument("--display", action="store_true", default=False)
     parser.add_argument("--num_agents", type=int, default=10)
+    parser.add_argument("--num_seeds", type=int, default=1)
+    parser.add_argument("--activation", type=str, default='relu', help='relu|leaky_relu')
+    parser.add_argument("--shape", type=str, default='circle', help='circle|rect|triangle|pyramid')
+    parser.add_argument("--force", action="store_true", default=False, help='overwrite the previous ckpt')
     return parser.parse_args()

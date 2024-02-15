@@ -75,13 +75,13 @@ class Actor(nn.Module):
 
 
 class ActorG(nn.Module):
-    def __init__(self, hidden_size, num_inputs, num_outputs, num_agents, critic_type='mlp', group=None):
+    def __init__(self, hidden_size, num_inputs, num_outputs, num_agents, critic_type='mlp', group=None, activation='relu'):
         super(ActorG, self).__init__()
         assert num_agents == sum(group)
         self.num_agents = num_agents
         self.critic_type = critic_type
         sa_dim = int(num_inputs / num_agents)
-        self.net_fn = model_factory.get_model_fn(critic_type)
+        self.net_fn = model_factory.get_model_fn(critic_type, activation=activation)
         if group is None:
             self.net = self.net_fn(sa_dim, num_agents, hidden_size)
         else:
@@ -99,14 +99,14 @@ class ActorG(nn.Module):
 
 
 class Critic(nn.Module):
-    def __init__(self, hidden_size, num_inputs, num_outputs, num_agents, critic_type='mlp', agent_id=0, group=None):
+    def __init__(self, hidden_size, num_inputs, num_outputs, num_agents, critic_type='mlp', agent_id=0, group=None, activation='relu'):
         super(Critic, self).__init__()
 
         self.num_agents = num_agents
         self.critic_type = critic_type
         sa_dim = int((num_inputs + num_outputs) / num_agents)
         self.agent_id = agent_id
-        self.net_fn = model_factory.get_model_fn(critic_type)
+        self.net_fn = model_factory.get_model_fn(critic_type, activation=activation)
         if group is None:
             self.net = self.net_fn(sa_dim, num_agents, hidden_size)
         else:

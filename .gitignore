@@ -6,3 +6,4 @@ ckpt_plot/
 test_input.txt
 test_obs/
 gpt_eval/
+reward_plots/

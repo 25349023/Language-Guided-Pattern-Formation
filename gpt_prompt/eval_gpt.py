@@ -36,7 +36,7 @@ def clip_score(clip_model, prompt, raw_image):
 
     word_bank_without_prompt = [ns for ns in NEG_SAMPLES if ns.lower() not in prompt.lower()]
     neg_samples = random.sample(word_bank_without_prompt, 4)
-    raw_text = [template.format(sh) for sh in itertools.chain(neg_samples, [prompt])]
+    raw_text = [template.format(sh) for sh in [prompt] + neg_samples]
 
     text = clip.tokenize(raw_text).to(device)
 
@@ -45,10 +45,10 @@ def clip_score(clip_model, prompt, raw_image):
         # text_features = model.encode_text(text)
 
         logits_per_image, logits_per_text = model(image, text)
-        probs = logits_per_image.softmax(dim=-1).cpu().numpy()
+        probs = logits_per_image.softmax(dim=-1).cpu().numpy()[0]
 
-    for i, rt in enumerate(raw_text):
-        print(f'{probs[0, i]:.4f} <== {rt}')
+    for i in probs.argsort()[::-1]:
+        print(f'{probs[i]:.4f} <== {raw_text[i]}')
 
 
 if __name__ == '__main__':
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     pathlib.Path('gpt_eval').mkdir(exist_ok=True)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    clip_args = clip.load("ViT-L/14", device=device)
+    clip_args = clip.load("ViT-L/14@336px", device=device)
 
     num = 0
     while True:

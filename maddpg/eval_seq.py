@@ -53,10 +53,11 @@ def eval_model_seq(args, agent):
 
                 if done_n[0] or terminal:
                     eval_rewards.append(episode_reward)
-                    print(f'test reward: {episode_reward}, total collision: {episode_collisions}')
                     comp_rates.append(completion_rate(eval_env))
                     collisions.append(episode_collisions)
                     avg_distance.append(distance_to_landmark(eval_env))
+                    print(f'test reward: {episode_reward}, total collision: {episode_collisions}, '
+                          f'completion rate: {comp_rates[-1]}')
                     break
 
     mean_reward = np.mean(eval_rewards)

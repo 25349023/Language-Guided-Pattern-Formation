@@ -25,7 +25,7 @@ def run_experiment(exp_name, args, test_q, metric_q):
     exp_save_dir = os.path.join(args.save_dir, exp_name)
     os.makedirs(exp_save_dir, exist_ok=args.force)
     with open(f'{exp_save_dir}/train_args.json', 'w') as f:
-        json.dump(vars(args), f)
+        json.dump(vars(args), f, indent=2)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() and args.cuda else "cpu")
 
@@ -110,14 +110,6 @@ def run_experiment(exp_name, args, test_q, metric_q):
             obs_n = next_obs_n
 
             if len(memory) > args.batch_size:
-                if total_numsteps % args.steps_per_actor_update == 0:
-                    for _ in range(args.updates_per_step):
-                        transitions = memory.sample(args.batch_size)
-                        batch = Transition(*zip(*transitions))
-                        policy_loss = agent.update_actor_parameters(batch, i, args.shuffle)
-                        updates += 1
-                    # print(f'episode {i_episode}, p loss {policy_loss}, p_lr {agent.actor_lr}')
-
                 if total_numsteps % args.steps_per_critic_update == 0:
                     value_losses = []
                     for _ in range(args.critic_updates_per_step):
@@ -130,6 +122,14 @@ def run_experiment(exp_name, args, test_q, metric_q):
                     #       f'q_lr {agent.critic_optim.param_groups[0]["lr"]}')
                     if args.target_update_mode == 'episodic':
                         hard_update(agent.critic_target, agent.critic)
+
+                if total_numsteps % args.steps_per_actor_update == 0:
+                    for _ in range(args.updates_per_step):
+                        transitions = memory.sample(args.batch_size)
+                        batch = Transition(*zip(*transitions))
+                        policy_loss = agent.update_actor_parameters(batch, i, args.shuffle)
+                        updates += 1
+                    # print(f'episode {i_episode}, p loss {policy_loss}, p_lr {agent.actor_lr}')
 
             if done_n[0] or terminal:
                 if (i_episode + 1) % args.eval_freq == 0:

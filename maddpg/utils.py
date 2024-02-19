@@ -168,6 +168,7 @@ def get_args():
                         help='refer to real_deploy/tools.py for avalible shapes')
     parser.add_argument("--retain_pos", action="store_true", default=False,
                         help="retain agents' positions between episodes")
+    parser.add_argument("--ckpt_type", type=str, default="best", help='best | last')
 
     # Experiment parameters
     parser.add_argument('--seed', type=int, default=9, metavar='N',

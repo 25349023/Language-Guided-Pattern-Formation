@@ -12,9 +12,9 @@ from eval_seq import eval_model_seq
 from utils import get_args
 
 
-def load_model(ckpt_dir, dev_str):
+def load_model(ckpt_dir, dev_str, suffix):
     device = torch.device(dev_str)
-    agent_path = os.path.join(ckpt_dir, 'agents_best.ckpt')
+    agent_path = os.path.join(ckpt_dir, f'agents{suffix}.ckpt')
     eval_agent = torch.load(agent_path, map_location=device)['agents']
     eval_agent.device = dev_str
     return eval_agent
@@ -35,22 +35,21 @@ def main():
 
     dev_str = "cuda:0" if torch.cuda.is_available() and args.cuda else "cpu"
 
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
+    ckpt_suffix = '_best' if args.ckpt_type == 'best' else ''
 
     if args.num_seeds == -1:
         metric_results = []
         for dirname in glob.iglob(os.path.join(args.save_dir, args.exp_name, '*seed*')):
+            args.seed = random.randrange(50000)
             try:
-                eval_agent = load_model(dirname, dev_str)
+                eval_agent = load_model(dirname, dev_str, ckpt_suffix)
             except FileNotFoundError:
                 continue
             print(f'Running Evaluation for {os.path.basename(dirname)}')
             metric_results.append(eval_model_seq(args, eval_agent))
     else:
         ckpt_dir = os.path.join(args.save_dir, args.exp_name)
-        eval_agent = load_model(ckpt_dir, dev_str)
+        eval_agent = load_model(ckpt_dir, dev_str, ckpt_suffix)
         metric_results = [eval_model_seq(args, eval_agent)]
 
     pprint.pprint(metric_results)

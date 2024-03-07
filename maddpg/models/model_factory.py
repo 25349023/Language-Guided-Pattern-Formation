@@ -11,6 +11,7 @@ from models import graph_net, mlp_net
 def get_model_fn(name, **kwargs):
     MODEL_MAP = {
         'mlp': mlp_net.MlpNet,
+        'vmlp': mlp_net.VdnMlpNet,
         'mlp_module': mlp_net.MlpNetM,
         'mlp_shuffle_all': functools.partial(mlp_net.MlpNet, agent_shuffle='all'),
         'mlp_shuffle_others': functools.partial(mlp_net.MlpNet, agent_shuffle='others'),

@@ -259,9 +259,9 @@ class World(object):
             if entity.max_speed is not None:
                 speed = np.sqrt(np.square(entity.state.p_vel[0]) + np.square(entity.state.p_vel[1]))
                 if speed > entity.max_speed:
-                    entity.state.p_vel = entity.state.p_vel / np.sqrt(np.square(entity.state.p_vel[0]) +
-                                                                      np.square(
-                                                                          entity.state.p_vel[1])) * entity.max_speed
+                    entity.state.p_vel = entity.state.p_vel / np.sqrt(
+                        np.square(entity.state.p_vel[0]) + np.square(entity.state.p_vel[1])
+                    ) * entity.max_speed
             entity.state.p_pos += entity.state.p_vel * self.dt
 
     def update_agent_state(self, agent):

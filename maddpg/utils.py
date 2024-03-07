@@ -114,6 +114,7 @@ def get_args():
     parser.add_argument("--num_agents", type=int, default=10)
     parser.add_argument("--agent_rad", type=float, default=0.15)
     parser.add_argument("--world_rad", type=float, default=3.0)
+    parser.add_argument("--n_others", type=int, default=5)
 
     # Algorithm parameters
     parser.add_argument('--gamma', type=float, default=0.95, metavar='G',

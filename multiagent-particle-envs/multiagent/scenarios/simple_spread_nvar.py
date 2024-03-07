@@ -23,7 +23,7 @@ class Scenario(BaseScenario, CollisionBenchmarkMixin):
         world.collaborative = True
         self.agent_size = args.agent_rad
         self.world_radius = args.world_rad
-        self.n_others = 5
+        self.n_others = args.n_others
 
         # add agents
         world.agents = [Agent() for i in range(num_agents)]
@@ -50,7 +50,13 @@ class Scenario(BaseScenario, CollisionBenchmarkMixin):
         while len(self.l_locations) < len(world.landmarks):
             self.l_locations = poisson_disc_samples(width=self.world_radius * 2, height=self.world_radius * 2,
                                                     r=self.agent_size * 4.5)
-            # print('regenerate l location')
+
+        self.a_locations = poisson_disc_samples(width=self.world_radius * 2, height=self.world_radius * 2,
+                                                r=self.agent_size * 2.1)
+        while len(self.a_locations) < len(world.agents):
+            self.a_locations = poisson_disc_samples(width=self.world_radius * 2, height=self.world_radius * 2,
+                                                    r=self.agent_size * 2.1)
+        a_locations = np.array(self.random.sample(self.a_locations, len(world.agents))) - self.world_radius
 
         # random properties for agents
         for i, agent in enumerate(world.agents):
@@ -59,11 +65,13 @@ class Scenario(BaseScenario, CollisionBenchmarkMixin):
         for i, landmark in enumerate(world.landmarks):
             landmark.color = np.array([0.25, 0.25, 0.25])
         # set random initial states
-        for agent in world.agents:
+        for i, agent in enumerate(world.agents):
             if from_make or not self.retain_pos:
-                agent.state.p_pos = self.np_rnd.uniform(-self.world_radius, +self.world_radius, world.dim_p)
+                agent.state.p_pos = a_locations[i]
+                # agent.state.p_pos = self.np_rnd.uniform(-self.world_radius, +self.world_radius, world.dim_p)
             agent.state.p_vel = np.zeros(world.dim_p)
             agent.state.c = np.zeros(world.dim_c)
+
         l_locations = np.array(self.random.sample(self.l_locations, len(world.landmarks))) - self.world_radius
         for i, landmark in enumerate(world.landmarks):
             landmark.state.p_pos = l_locations[i, :]

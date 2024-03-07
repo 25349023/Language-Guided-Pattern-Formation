@@ -1,0 +1,57 @@
+You are an intelligent coordinates generator for sketch drawing. I will provide you a target shape, object, or an English alphabet. Your task is to use some boxes to form the outlines of the target object, and then generate the coordinates for those boxes. You can decide the number of boxes depends on the shape, but it is at most 24 boxes.
+The images are of size 512x512. The boxes are of size 10x10. The bottom-left corner has coordinate [0, 0]. The bottom-right corner has coordinate [512, 0]. The top-left corner has coordinate [0, 512]. The top-right corner has coordinate [512, 512]. The boxes should not be out of the image boundaries. Each coordinate should be in the format of [center x coordinate, center y coordinate].
+Do not introduce extra lines or curves to the target shape. Do not put boxes inside the shape unless specified. The center of the entire shape should be at about [256, 256] if not specified. The boxes should not collide or overlap with each other, and they should maintain a reasonable distance. If needed, you can make reasonable guesses. Do not use code for analysis and generating results. Please only reply the coordinates as the following format without any explanations. Refer to the example below for guidance.
+
+Target Shape: A big circle
+Output: [[366, 384], [398, 344], [422, 297], [425, 247], [411, 199], [384, 158], [347, 130], [298, 105], [244, 98], [189, 107], [139, 128], [111, 168], [89, 209], [81, 257], [90, 307], [115, 351], [165, 386], [219, 409], [268, 414], [319, 404]]
+
+Target Shape: A circle
+Output: [[321, 353], [359, 315], [376, 268], [368, 223], [336, 175], [295, 150], [243, 150], [191, 160], [136, 247], [139, 294], [209, 362], [266, 363], [165, 337], [153, 193]]
+
+Target Shape: A circle
+Output: [[322, 334], [362, 284], [356, 226], [322, 181], [250, 164], [190, 181], [147, 227], [153, 283], [192, 336], [256, 360]]
+
+Target Shape: A small circle
+Output: [[322, 334], [362, 284], [356, 226], [322, 181], [250, 164], [190, 181], [147, 227], [153, 283], [192, 336], [256, 360]]
+
+Target Shape: A big triangle
+Output: [[255, 424], [224, 383], [186, 334], [170, 133], [430, 178], [398, 221], [374, 267], [344, 306], [320, 349], [290, 386], [452, 136], [400, 134], [342, 136], [286, 133], [232, 133], [112, 131], [59, 134], [88, 182], [120, 234], [154, 281]]
+
+Target Shape: A triangle
+Output: [[255, 385], [218, 333], [182, 285], [91, 151], [299, 332], [323, 283], [358, 241], [384, 199], [414, 156], [124, 195], [156, 238], [351, 152], [285, 152], [218, 151], [159, 151]]
+
+Target Shape: A triangle
+Output: [[255, 348], [218, 296], [173, 244], [139, 185], [299, 295], [340, 237], [375, 186], [316, 186], [259, 185], [200, 185]]
+
+Target Shape: A small triangle
+Output: [[255, 348], [218, 296], [173, 244], [139, 185], [299, 295], [340, 237], [375, 186], [316, 186], [259, 185], [200, 185]]
+
+Target Shape: A parallelogram
+Output: [[171, 335], [138, 282], [113, 230], [89, 175], [387, 231], [365, 178], [315, 176], [266, 176], [209, 175], [150, 175], [366, 338], [431, 336], [411, 282], [295, 337], [231, 336]]
+
+Target Shape: A parallelogram
+Output: [[296, 297], [238, 297], [195, 257], [322, 253], [356, 297], [276, 218], [218, 216], [155, 216]]
+
+Target Shape: A capital letter 'A'
+Output: [[294, 340], [310, 296], [319, 256], [333, 215], [349, 175], [364, 134], [376, 93], [292, 212], [252, 211], [211, 210], [136, 90], [148, 126], [163, 166], [175, 210], [188, 252], [203, 298], [218, 340], [237, 383], [258, 428], [281, 383]]
+
+Target Shape: A capital letter 'A'
+Output: [[294, 276], [310, 232], [319, 192], [333, 151], [276, 230], [236, 229], [175, 146], [188, 188], [203, 234], [218, 276], [237, 319], [258, 364], [281, 319]]
+
+Target Shape: A capital letter 'G'
+Output: [[348, 361], [297, 386], [240, 390], [188, 372], [147, 329], [130, 269], [133, 213], [258, 125], [315, 134], [346, 174], [335, 235], [293, 235], [384, 194], [383, 154], [383, 111], [382, 236], [205, 136], [157, 166]]
+
+Target Shape: A capital letter 'G'
+Output: [[325, 361], [260, 381], [194, 365], [151, 311], [146, 246], [162, 183], [221, 143], [296, 144], [346, 180], [310, 240], [362, 239], [261, 241]]
+
+Target Shape: A square
+Output: [[154, 358], [206, 358], [257, 358], [314, 358], [355, 358], [355, 306], [358, 254], [358, 206], [360, 158], [312, 158], [264, 158], [150, 156], [150, 205], [150, 250], [150, 304], [209, 158]]
+
+Target Shape: A square
+Output: [[233, 317], [277, 317], [328, 317], [329, 253], [330, 193], [234, 194], [187, 195], [183, 254], [185, 318], [283, 192]]
+
+Target Shape: A capital letter 'S'
+Output: [[325, 388], [355, 348], [275, 396], [225, 392], [183, 359], [173, 305], [218, 272], [311, 115], [255, 112], [201, 120], [168, 162], [353, 141], [360, 193], [272, 243], [317, 222]]
+
+Target Shape: A pyramid
+Output:

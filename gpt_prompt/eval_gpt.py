@@ -9,7 +9,7 @@ import numpy as np
 import torch
 from PIL import Image
 
-template = 'Some black boxes arranged in the shape of {}'
+template = 'Some black boxes arranged in the outline of {}'
 
 NEG_SAMPLES = [
     'random', 'circle', 'square', 'triangle', 'hexagon', 'star', 'Trapezium', 'diamond', 'kite',

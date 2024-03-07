@@ -10,7 +10,8 @@ class MetricRecord:
     eval_reward: float
     completion_rate: float
     avg_collision_count: float
-    total_distance: float
+    remaining_dist: float
+    keeping_dist: float
 
 
 def completion_rate(eval_env):

@@ -18,4 +18,6 @@ class CollisionBenchmarkMixin:
         distances = np.sqrt(np.square(agent.state.p_pos - all_agents).sum(axis=1))
         collide_cnt = (distances < agent_diameter).sum() - 1
 
-        return collide_cnt
+        min_dist = np.partition(distances, 1)[1]
+
+        return collide_cnt, min_dist

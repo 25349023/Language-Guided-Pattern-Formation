@@ -37,8 +37,8 @@ def main():
 
     ckpt_suffix = '_best' if args.ckpt_type == 'best' else ''
 
+    metric_results = []
     if args.num_seeds == -1:
-        metric_results = []
         for dirname in glob.iglob(os.path.join(args.save_dir, args.exp_name, '*seed*')):
             args.seed = random.randrange(50000)
             try:
@@ -46,11 +46,15 @@ def main():
             except FileNotFoundError:
                 continue
             print(f'Running Evaluation for {os.path.basename(dirname)}')
-            metric_results.append(eval_model_seq(args, eval_agent))
+            met, keep_dists = eval_model_seq(args, eval_agent)
+            metric_results.append(met)
+            np.save(os.path.join(dirname, 'keep_dists.npy'), keep_dists)
     else:
         ckpt_dir = os.path.join(args.save_dir, args.exp_name)
         eval_agent = load_model(ckpt_dir, dev_str, ckpt_suffix)
-        metric_results = [eval_model_seq(args, eval_agent)]
+        met, keep_dists = eval_model_seq(args, eval_agent)
+        metric_results.append(met)
+        np.save(os.path.join(ckpt_dir, 'keep_dists.npy'), keep_dists)
 
     pprint.pprint(metric_results)
     print()

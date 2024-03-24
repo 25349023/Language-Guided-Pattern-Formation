@@ -3,7 +3,6 @@ import sys
 import torch
 import torch.nn as nn
 from torch.optim import Adam
-from torch.autograd import Variable
 import torch.nn.functional as F
 from torch.nn.utils import clip_grad_norm_
 import numpy as np
@@ -24,7 +23,7 @@ def hard_update(target, source):
 def adjust_lr(optimizer, init_lr, episode_i, num_episode, start_episode):
     if episode_i < start_episode:
         return init_lr
-    lr = init_lr * (1 - (episode_i - start_episode) / (num_episode - start_episode))
+    lr = init_lr * (1 - max((episode_i - start_episode) / (num_episode - start_episode), 0.15))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
@@ -75,7 +74,8 @@ class Actor(nn.Module):
 
 
 class ActorG(nn.Module):
-    def __init__(self, hidden_size, num_inputs, num_outputs, num_agents, critic_type='mlp', group=None, activation='relu'):
+    def __init__(self, hidden_size, num_inputs, num_outputs, num_agents, critic_type='mlp', group=None,
+                 activation='relu'):
         super(ActorG, self).__init__()
         assert num_agents == sum(group)
         self.num_agents = num_agents
@@ -99,7 +99,8 @@ class ActorG(nn.Module):
 
 
 class Critic(nn.Module):
-    def __init__(self, hidden_size, num_inputs, num_outputs, num_agents, critic_type='mlp', agent_id=0, group=None, activation='relu'):
+    def __init__(self, hidden_size, num_inputs, num_outputs, num_agents, critic_type='mlp', agent_id=0, group=None,
+                 activation='relu'):
         super(Critic, self).__init__()
 
         self.num_agents = num_agents
@@ -134,8 +135,10 @@ class DDPG(object):
             group = [1, 1, 2, 3, 1]
             # spread n=30
             # group = [1, 1, 6, 5]
-            self.actor = ActorG(hidden_size, obs_dim, n_action, int(obs_dim / 2), actor_type, group=group).to(self.device)
-            self.actor_target = ActorG(hidden_size, obs_dim, n_action, int(obs_dim / 2), actor_type, group=group).to(self.device)
+            self.actor = ActorG(hidden_size, obs_dim, n_action, int(obs_dim / 2), actor_type, group=group).to(
+                self.device)
+            self.actor_target = ActorG(hidden_size, obs_dim, n_action, int(obs_dim / 2), actor_type, group=group).to(
+                self.device)
             self.actor_perturbed = ActorG(hidden_size, obs_dim, n_action, int(obs_dim / 2), actor_type, group=group)
         else:
             self.actor = Actor(hidden_size, obs_dim, n_action).to(self.device)
@@ -145,8 +148,10 @@ class DDPG(object):
                                 lr=actor_lr, weight_decay=0)
 
         if critic_dec_cen == 'decen':
-            self.critic = Critic(hidden_size, obs_dims[agent_id + 1], n_action, 1, critic_type, agent_id).to(self.device)
-            self.critic_target = Critic(hidden_size, obs_dims[agent_id + 1], n_action, 1, critic_type, agent_id).to(self.device)
+            self.critic = Critic(hidden_size, obs_dims[agent_id + 1], n_action, 1, critic_type, agent_id).to(
+                self.device)
+            self.critic_target = Critic(hidden_size, obs_dims[agent_id + 1], n_action, 1, critic_type, agent_id).to(
+                self.device)
         else:
             self.critic = Critic(hidden_size, np.sum(obs_dims),
                                  n_action * n_agent, n_agent, critic_type, agent_id).to(self.device)
@@ -177,8 +182,6 @@ class DDPG(object):
         hard_update(self.actor_target, self.actor)
         hard_update(self.critic_target, self.critic)
 
-
-
     def adjust_lr(self, i_episode):
         adjust_lr(self.actor_optim, self.init_act_lr, i_episode, self.num_episodes, self.start_episode)
         adjust_lr(self.critic_optim, self.init_critic_lr, i_episode, self.num_episodes, self.start_episode)
@@ -190,12 +193,14 @@ class DDPG(object):
         return 1 - ((step - start_decrease_step) / (
                 max_step - start_decrease_step)) if step > start_decrease_step else 1
 
-    def select_action(self, state, action_noise=None, param_noise=False, grad=False):
+    def select_action(self, state, action_noise=None, param_noise=False, grad=False, target=False):
         self.actor.eval()
-        if param_noise:
-            mu = self.actor_perturbed((Variable(state)))
+        if target:
+            mu = self.actor_target(state)
+        elif param_noise:
+            mu = self.actor_perturbed(state)
         else:
-            mu = self.actor((Variable(state)))
+            mu = self.actor(state)
 
         self.actor.train()
         if not grad:
@@ -215,10 +220,10 @@ class DDPG(object):
             return action, mu
 
     def update_critic_parameters(self, batch, agent_id, shuffle=None, eval=False):
-        state_batch = Variable(torch.cat(batch.state)).to(self.device)
-        action_batch = Variable(torch.cat(batch.action)).to(self.device)
-        reward_batch = Variable(torch.cat(batch.reward)).to(self.device)
-        mask_batch = Variable(torch.cat(batch.mask)).to(self.device)
+        state_batch = torch.cat(batch.state).to(self.device)
+        action_batch = torch.cat(batch.action).to(self.device)
+        reward_batch = torch.cat(batch.reward).to(self.device)
+        mask_batch = torch.cat(batch.mask).to(self.device)
         next_state_batch = torch.cat(batch.next_state).to(self.device)
         if shuffle == 'shuffle':
             rand_idx = np.random.permutation(self.n_agent)
@@ -229,16 +234,15 @@ class DDPG(object):
             new_action_batch = action_batch.view(-1, self.n_agent, self.n_action)
             action_batch = new_action_batch[:, rand_idx, :].view(-1, self.n_action * self.n_agent)
 
-
         next_action_batch = self.select_action(
-            next_state_batch.view(-1, self.obs_dim), action_noise=self.train_noise)
+            next_state_batch.view(-1, self.obs_dim), action_noise=self.train_noise, target=True)
         next_action_batch = next_action_batch.view(-1, self.n_action * self.n_agent)
         next_state_action_values = self.critic_target(
-                next_state_batch, next_action_batch)
+            next_state_batch, next_action_batch)
 
         reward_batch = reward_batch[:, agent_id].unsqueeze(1)
         mask_batch = mask_batch[:, agent_id].unsqueeze(1)
-        expected_state_action_batch = reward_batch + (self.gamma * mask_batch * next_state_action_values)
+        expected_state_action_batch = reward_batch + (self.gamma * next_state_action_values)
         self.critic_optim.zero_grad()
         state_action_batch = self.critic(state_batch, action_batch)
         perturb_out = 0
@@ -255,7 +259,7 @@ class DDPG(object):
         return value_loss.item(), perturb_out, unclipped_norm
 
     def update_actor_parameters(self, batch, agent_id, shuffle=None):
-        state_batch = Variable(torch.cat(batch.state)).to(self.device)
+        state_batch = torch.cat(batch.state).to(self.device)
         if shuffle == 'shuffle':
             rand_idx = np.random.permutation(self.n_agent)
             new_state_batch = state_batch.view(-1, self.n_agent, self.obs_dim)
@@ -266,19 +270,19 @@ class DDPG(object):
             state_batch.view(-1, self.obs_dim), action_noise=self.train_noise, grad=True)
         action_batch_n = action_batch_n.view(-1, self.n_action * self.n_agent)
 
-
         policy_loss = -self.critic(state_batch, action_batch_n)
         policy_loss = policy_loss.mean() + 1e-3 * (logit ** 2).mean()
         policy_loss.backward()
-        #clip_grad_norm_(self.actor.parameters(), 0.00000001)
+        # clip_grad_norm_(self.actor.parameters(), 0.00000001)
         clip_grad_norm_(self.actor_params, 0.5)
         self.actor_optim.step()
 
-        soft_update(self.actor_target, self.actor, self.tau)
-        soft_update(self.critic_target, self.critic, self.tau)
+        if self.target_update_mode == 'soft':
+            soft_update(self.actor_target, self.actor, self.tau)
+        elif self.target_update_mode == 'hard':
+            hard_update(self.actor_target, self.actor)
 
         return policy_loss.item()
-
 
     def perturb_actor_parameters(self, param_noise):
         """Apply parameter noise to actor model, for exploration"""

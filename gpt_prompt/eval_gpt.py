@@ -50,6 +50,8 @@ def clip_score(clip_model, prompt, raw_image):
     for i in probs.argsort()[::-1]:
         print(f'{probs[i]:.4f} <== {raw_text[i]}')
 
+    return f'{probs[0]:.4f}'
+
 
 if __name__ == '__main__':
     lm_pattern = re.compile(r'''\[(\[\d*,\s*\d*\](,\s*)?)+\]''')
@@ -71,7 +73,12 @@ if __name__ == '__main__':
         img = convert2img(coord)
 
         prompt = input("Input original prompt: ").strip()
-        clip_score(clip_args, prompt, img)
+
+        scores = []
+        for _ in range(3):
+            scores.append(clip_score(clip_args, prompt, img))
+            print()
+        print(scores)
 
         # with open(f'output/coord_{num:03}.txt', 'w') as f:
         #     f.write(coord_str)

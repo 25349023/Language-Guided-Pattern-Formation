@@ -23,8 +23,8 @@ class Scenario(BaseScenario, CollisionBenchmarkMixin):
         world.dim_c = 2
 
         assert args is not None
-        num_agents = 20
-        num_landmarks = 20
+        num_agents = args.num_agents
+        num_landmarks = args.num_agents
         self.retain_pos = args.retain_pos
         world.collaborative = True
         self.agent_size = args.agent_rad

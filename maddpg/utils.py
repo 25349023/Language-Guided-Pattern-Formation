@@ -163,6 +163,7 @@ def get_args():
     # Evaluation parameters
     parser.add_argument('--eval_freq', type=int, default=1000)
     parser.add_argument("--display", action="store_true", default=False)
+    parser.add_argument("--save_last_frame", action="store_true", default=False)
     parser.add_argument('--num_eval_runs', type=int, default=20,
                         help='number of runs per evaluation (default: 20)')
     parser.add_argument("--shape", type=str, default='circle',

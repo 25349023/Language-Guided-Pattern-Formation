@@ -203,6 +203,9 @@ class MultiAgentEnv(gym.Env):
         for viewer in self.viewers:
             viewer.close()
 
+    def get_frame(self):
+        return self.viewers[0].get_array()
+
     # render environment
     def render(self, mode='human'):
         # if mode == 'human':

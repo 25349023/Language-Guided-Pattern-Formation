@@ -46,13 +46,13 @@ def main():
             except FileNotFoundError:
                 continue
             print(f'Running Evaluation for {os.path.basename(dirname)}')
-            met, keep_dists = eval_model_seq(args, eval_agent)
+            met, keep_dists = eval_model_seq(args, eval_agent, dirname)
             metric_results.append(met)
             np.save(os.path.join(dirname, 'keep_dists.npy'), keep_dists)
     else:
         ckpt_dir = os.path.join(args.save_dir, args.exp_name)
         eval_agent = load_model(ckpt_dir, dev_str, ckpt_suffix)
-        met, keep_dists = eval_model_seq(args, eval_agent)
+        met, keep_dists = eval_model_seq(args, eval_agent, ckpt_dir)
         metric_results.append(met)
         np.save(os.path.join(ckpt_dir, 'keep_dists.npy'), keep_dists)
 

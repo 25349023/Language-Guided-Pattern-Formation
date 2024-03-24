@@ -1,6 +1,9 @@
 import contextlib
+import os
 import time
+from datetime import datetime
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
@@ -18,7 +21,13 @@ def temp_seed(seed):
         np.random.set_state(state)
 
 
-def eval_model_seq(args, agent):
+def save_frame(env):
+    os.makedirs('frames', exist_ok=True)
+    fig = env.get_frame()
+    plt.imsave(f'frames/lastframe_{datetime.now():%y%m%d-%H%M%S}.png', fig)
+
+
+def eval_model_seq(args, agent, ckpt_dir):
     eval_env = make_env(args.scenario, args, benchmark=True)
     device = torch.device("cuda:0" if torch.cuda.is_available() and args.cuda else "cpu")
 
@@ -64,6 +73,9 @@ def eval_model_seq(args, agent):
                     keep_dists.append(keep_d)
                     print(f'test reward: {episode_reward}, total collision: {episode_collisions}, '
                           f'completion rate: {comp_rates[-1]}')
+
+                    if args.save_last_frame:
+                        save_frame(eval_env)
                     break
 
     mean_reward = np.mean(eval_rewards)

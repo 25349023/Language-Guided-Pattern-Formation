@@ -8,17 +8,27 @@
 * Pytorch 1.12.1
 * OpenAI gym 0.26.2 (https://github.com/openai/gym)
 
-### Install the improved MPE:
+### 1. Install the specified version of Pytorch
+- Ref: [Installation Instruction](https://pytorch.org/get-started/previous-versions/)
+
+### 2. Install the improved MPE:
     cd multiagent-particle-envs
     pip install -e .
 
-### Install other required packages
+### 3. Install other required packages
     pip install -r requirements.txt
+
+## Model Training
+    python main_vec.py --exp_name simspread_n10 --scenario simple_spread_nvar --critic_type gcn_max --cuda --eval_freq 1000 --num_steps 75 --num_episodes 60000 --num_agents 10 --num_seeds 3 --tau 0.005 --force
 
 ## Model Evaluation
 
 ### Simulation
     cd maddpg
+    # Evaluate the custom-trained ckpt 
+    python inference.py --exp_name simspread_n10 --scenario simple_spread_nvar --critic_type gcn_max --cuda --num_steps 75 --num_agents 10 --num_seeds -1
+
+    # Evaluate the provided ckpt
     python inference.py --save_dir <ckpt_dir> --exp_name coop_navigation_n20 --scenario simple_spread_custom_n20 --critic_type gcn_max --cuda --num_steps 100
 
 ### Real robots

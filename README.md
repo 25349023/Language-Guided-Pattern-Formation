@@ -1,4 +1,4 @@
-# PIC-Lang
+# LGPF: Language-Guided Pattern Formation
 
 ## Installation & Setup
 
@@ -8,17 +8,18 @@
 * Pytorch 1.12.1
 * OpenAI gym 0.26.2 (https://github.com/openai/gym)
 
-### 1. Install the specified version of Pytorch
-- Ref: [Installation Instruction](https://pytorch.org/get-started/previous-versions/)
-
-### 2. Install the improved MPE:
+### 1. Install the improved MPE:
     cd multiagent-particle-envs
     pip install -e .
+
+### 2. Install the specified version of Pytorch
+- Ref: [Installation Instruction](https://pytorch.org/get-started/previous-versions/)
 
 ### 3. Install other required packages
     pip install -r requirements.txt
 
 ## Model Training
+    cd maddpg
     python main_vec.py --exp_name simspread_n10 --scenario simple_spread_nvar --critic_type gcn_max --cuda --eval_freq 1000 --num_steps 75 --num_episodes 60000 --num_agents 10 --num_seeds 3 --tau 0.005 --force
 
 ## Model Evaluation
@@ -54,5 +55,5 @@ The GCN code is based on the implementation of https://github.com/tkipf/gcn
 The PIC code is based on the implementation of https://github.com/IouJenLiu/PIC
 
 ## License
-PIC-Lang is licensed under the MIT License
+LGPF is licensed under the MIT License
 
